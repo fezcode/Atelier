@@ -188,6 +188,65 @@ namespace Atelier.Views
             aboutWindow.ShowDialog(this);
         }
 
+        public void EditImage_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                vm.EnterEditMode();
+                // Ensure side pane is visible when editing
+                if (!vm.ShowControls) ToggleControls_Click(null, new RoutedEventArgs());
+            }
+        }
+
+        public async void DiscardEdit_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                await vm.ExitEditMode(true);
+                FitToView();
+            }
+        }
+
+        public void Filter_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string filterName && DataContext is MainWindowViewModel vm)
+            {
+                vm.ApplyFilter(filterName);
+            }
+        }
+
+        public async void SaveEdit_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                await vm.SaveEditedImageAsync();
+            }
+        }
+
+        public async void SaveAsEdit_Click(object? sender, RoutedEventArgs e)
+        {
+            var topLevel = GetTopLevel(this);
+            if (topLevel == null) return;
+
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Save Edited Image As",
+                DefaultExtension = "png",
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType("PNG Image") { Patterns = new[] { "*.png" } },
+                    new FilePickerFileType("JPEG Image") { Patterns = new[] { "*.jpg", "*.jpeg" } },
+                    new FilePickerFileType("WebP Image") { Patterns = new[] { "*.webp" } },
+                    new FilePickerFileType("AVIF Image") { Patterns = new[] { "*.avif" } }
+                }
+            });
+
+            if (file != null && DataContext is MainWindowViewModel vm)
+            {
+                await vm.SaveEditedImageAsync(file.Path.LocalPath);
+            }
+        }
+
         public void ToggleControls_Click(object? sender, RoutedEventArgs e)
         {
             if (DataContext is MainWindowViewModel vm)

@@ -36,6 +36,9 @@
                 <MenuItem Header="_Full Screen" Click="FullScreen_Click" InputGesture="F"/>
                 <MenuItem Header="_Fit to Screen" Click="FitToScreen_Click"/>
             </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Edit Image" Click="EditImage_Click" IsEnabled="{Binding IsViewMode}"/>
+            </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Click="About_Click"/>
             </MenuItem>
@@ -80,31 +83,79 @@
             <GridSplitter Grid.Column="1" Width="4" Background="#333333" 
                           ResizeDirection="Columns" IsVisible="{Binding ShowControls}"/>
 
-            <!-- Info Panel (Right) -->
+            <!-- Side Panel (Right) -->
             <Border Grid.Column="2" Background="#1A1A1A" 
                     BorderBrush="#333333" BorderThickness="1,0,0,0"
                     IsVisible="{Binding ShowControls}"
                     Padding="10">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="IMAGE METADATA" Foreground="#666666" FontSize="10" FontWeight="Bold" LetterSpacing="1" Margin="5,0,0,10"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding MetadataItems}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Margin="5,2,5,8">
-                                        <TextBlock Text="{Binding Label}" Foreground="#555555" FontSize="10" FontWeight="Bold"/>
-                                        <TextBlock Text="{Binding Value}" Foreground="#DDDDDD" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </DockPanel>
+                <Panel>
+                    <!-- Metadata View -->
+                    <DockPanel IsVisible="{Binding IsViewMode}">
+                        <TextBlock DockPanel.Dock="Top" Text="IMAGE METADATA" Foreground="#666666" FontSize="10" FontWeight="Bold" LetterSpacing="1" Margin="5,0,0,10"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding MetadataItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="5,2,5,8">
+                                            <TextBlock Text="{Binding Label}" Foreground="#555555" FontSize="10" FontWeight="Bold"/>
+                                            <TextBlock Text="{Binding Value}" Foreground="#DDDDDD" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+
+                    <!-- Edit View -->
+                    <DockPanel IsVisible="{Binding IsEditMode}">
+                        <StackPanel DockPanel.Dock="Top">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="EDIT IMAGE" Foreground="#666666" FontSize="10" FontWeight="Bold" LetterSpacing="1" Margin="5,0,0,10" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Click="DiscardEdit_Click" Background="Transparent" BorderThickness="0" Padding="5">
+                                    <Path Data="M 0 0 L 10 10 M 10 0 L 0 10" Stroke="#666666" StrokeThickness="2"/>
+                                </Button>
+                            </Grid>
+                            
+                            <Separator Background="#333333" Margin="0,5,0,15"/>
+                            
+                            <!-- HSL Adjustments -->
+                            <TextBlock Text="BRIGHTNESS" Foreground="#555555" FontSize="9" FontWeight="Bold" Margin="5,0,0,2"/>
+                            <Slider Minimum="0" Maximum="200" Value="{Binding Brightness}" Margin="5,0,5,10"/>
+                            
+                            <TextBlock Text="SATURATION" Foreground="#555555" FontSize="9" FontWeight="Bold" Margin="5,0,0,2"/>
+                            <Slider Minimum="0" Maximum="200" Value="{Binding Saturation}" Margin="5,0,5,10"/>
+                            
+                            <TextBlock Text="HUE" Foreground="#555555" FontSize="9" FontWeight="Bold" Margin="5,0,0,2"/>
+                            <Slider Minimum="0" Maximum="200" Value="{Binding Hue}" Margin="5,0,5,10"/>
+                            
+                            <TextBlock Text="CONTRAST" Foreground="#555555" FontSize="9" FontWeight="Bold" Margin="5,0,0,2"/>
+                            <Slider Minimum="-100" Maximum="100" Value="{Binding Contrast}" Margin="5,0,5,10"/>
+
+                            <TextBlock Text="BLUR" Foreground="#555555" FontSize="9" FontWeight="Bold" Margin="5,0,0,2"/>
+                            <Slider Minimum="0" Maximum="10" Value="{Binding BlurValue}" Margin="5,0,5,10"/>
+
+                            <TextBlock Text="FILTERS" Foreground="#666666" FontSize="10" FontWeight="Bold" Margin="5,10,0,10"/>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button Content="Mono" Click="Filter_Click" Tag="Grayscale" Width="60" Margin="2" FontSize="10"/>
+                                <Button Content="Sepia" Click="Filter_Click" Tag="Sepia" Width="60" Margin="2" FontSize="10"/>
+                                <Button Content="Invert" Click="Filter_Click" Tag="Negate" Width="60" Margin="2" FontSize="10"/>
+                                <Button Content="Sketch" Click="Filter_Click" Tag="Charcoal" Width="60" Margin="2" FontSize="10"/>
+                                <Button Content="Edge" Click="Filter_Click" Tag="Edge" Width="60" Margin="2" FontSize="10"/>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel DockPanel.Dock="Bottom" Margin="0,20,0,0" Spacing="10">
+                            <Button Content="Save (Overwrite)" Click="SaveEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="#2A2A2A"/>
+                            <Button Content="Save As..." Click="SaveAsEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="#2A2A2A"/>
+                            <Button Content="Discard Changes" Click="DiscardEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Foreground="#FF5555" Background="Transparent" BorderBrush="#442222"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Panel>
             </Border>
         </Grid>
 
         <!-- Bottom Area -->
-        <StackPanel Grid.Row="2" Background="#1A1A1A">
+        <StackPanel Grid.Row="2" Background="#1A1A1A" IsVisible="{Binding IsViewMode}">
             <!-- Chevron Toggle -->
             <Button HorizontalAlignment="Center" 
                     Background="Transparent" 
