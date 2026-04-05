@@ -107,12 +107,13 @@ namespace Atelier.ViewModels
                     }
                     ExtractBasicMetadata(path, "SVG Vector");
                 }
-                else if (ext == ".heic" || ext == ".heif")
+                else if (ext == ".heic" || ext == ".heif" || ext == ".avif")
                 {
                     using var image = new MagickImage(path);
                     ImageWidth = image.Width;
                     ImageHeight = image.Height;
-                    ExtractBasicMetadata(path, $"HEIC {image.Width}x{image.Height}");
+                    string formatLabel = ext == ".avif" ? "AVIF" : "HEIC";
+                    ExtractBasicMetadata(path, $"{formatLabel} {image.Width}x{image.Height}");
                     using var ms = new MemoryStream();
                     image.Write(ms, MagickFormat.Png);
                     ms.Position = 0;
