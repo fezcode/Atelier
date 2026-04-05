@@ -41,7 +41,14 @@ namespace Atelier.Views
             {
                 dragArea.PointerPressed += (s, e) =>
                 {
-                    if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                    if (e.ClickCount == 2 && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                    {
+                        WindowState = WindowState == WindowState.Maximized 
+                            ? WindowState.Normal 
+                            : WindowState.Maximized;
+                        e.Handled = true;
+                    }
+                    else if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
                     {
                         BeginMoveDrag(e);
                     }

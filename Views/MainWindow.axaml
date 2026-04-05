@@ -238,11 +238,11 @@
 
                     <Border Background="#111111" CornerRadius="8" Padding="15,8" BorderBrush="#222222" BorderThickness="1">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="{Binding ImagePath}" Foreground="#888888" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding ImagePath}" Foreground="#CCCCCC" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="10,0,0,0">
-                                <TextBlock Text="{Binding ImageWidth, StringFormat='\{0\}'}" Foreground="#AAAAAA" FontSize="11" VerticalAlignment="Center"/>
-                                <TextBlock Text="×" Foreground="#888888" FontSize="11" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding ImageHeight, StringFormat='\{0\}'}" Foreground="#AAAAAA" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ImageWidth, StringFormat='\{0\}'}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="×" Foreground="#AAAAAA" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ImageHeight, StringFormat='\{0\}'}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
                     </Border>
