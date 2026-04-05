@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Atelier.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -111,6 +112,130 @@ namespace Atelier.Views
             }
         }
 
+        public async void FileAssociations_Click(object? sender, RoutedEventArgs e)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                await ShowMessageDialog("Not Supported", "File associations are only supported on Windows.");
+                return;
+            }
+
+            var registered = FileAssociationHelper.GetRegisteredExtensions();
+            var checkBoxes = new List<CheckBox>();
+
+            foreach (var (ext, desc) in FileAssociationHelper.SupportedTypes)
+            {
+                var cb = new CheckBox
+                {
+                    Content = $"{ext}  —  {desc}",
+                    IsChecked = registered.Contains(ext),
+                    Foreground = Brushes.White,
+                    FontSize = 13,
+                    Margin = new Thickness(0, 3)
+                };
+                checkBoxes.Add(cb);
+            }
+
+            var selectAllCb = new CheckBox
+            {
+                Content = "Select All",
+                IsChecked = checkBoxes.All(cb => cb.IsChecked == true),
+                Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")),
+                FontSize = 12,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            selectAllCb.IsCheckedChanged += (_, _) =>
+            {
+                if (selectAllCb.IsChecked is bool val)
+                    foreach (var cb in checkBoxes) cb.IsChecked = val;
+            };
+
+            var list = new StackPanel { Spacing = 2 };
+            list.Children.Add(selectAllCb);
+            list.Children.Add(new Separator { Background = new SolidColorBrush(Color.Parse("#333333")), Margin = new Thickness(0, 2, 0, 6) });
+            foreach (var cb in checkBoxes)
+                list.Children.Add(cb);
+
+            var applyBtn = new Button
+            {
+                Content = "Apply",
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                Padding = new Thickness(0, 8),
+                Background = new SolidColorBrush(Color.Parse("#2A2A2A")),
+                Margin = new Thickness(0, 15, 0, 0)
+            };
+
+            var dialog = new Window
+            {
+                Title = "File Associations",
+                Width = 340,
+                Height = 400,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = false,
+                Background = new SolidColorBrush(Color.Parse("#1A1A1A")),
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(25, 20),
+                    Children =
+                    {
+                        new TextBlock { Text = "Choose which file types to open with Atelier:", Foreground = new SolidColorBrush(Color.Parse("#888888")), FontSize = 12, Margin = new Thickness(0, 0, 0, 12) },
+                        list,
+                        applyBtn
+                    }
+                }
+            };
+
+            applyBtn.Click += (_, _) =>
+            {
+                try
+                {
+                    var selected = new List<string>();
+                    for (int i = 0; i < checkBoxes.Count; i++)
+                    {
+                        if (checkBoxes[i].IsChecked == true)
+                            selected.Add(FileAssociationHelper.SupportedTypes[i].Extension);
+                    }
+                    FileAssociationHelper.RegisterFileAssociations(selected);
+                    dialog.Close();
+                }
+                catch (Exception ex)
+                {
+                    dialog.Title = $"Error: {ex.Message}";
+                }
+            };
+
+            await dialog.ShowDialog(this);
+        }
+
+        private async System.Threading.Tasks.Task ShowMessageDialog(string title, string message)
+        {
+            var dialog = new Window
+            {
+                Title = title,
+                Width = 400,
+                Height = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = false,
+                Background = new SolidColorBrush(Color.Parse("#1A1A1A")),
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(25),
+                    Spacing = 20,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                    Children =
+                    {
+                        new TextBlock { Text = message, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, FontSize = 13 },
+                        new Button { Content = "OK", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Padding = new Thickness(30, 8), Background = new SolidColorBrush(Color.Parse("#2A2A2A")) }
+                    }
+                }
+            };
+            // Wire OK button to close
+            if (dialog.Content is StackPanel sp && sp.Children[1] is Button okBtn)
+                okBtn.Click += (_, _) => dialog.Close();
+            await dialog.ShowDialog(this);
+        }
+
         public void Exit_Click(object? sender, RoutedEventArgs e)
         {
             Close();
@@ -160,6 +285,53 @@ namespace Atelier.Views
             FitToView();
         }
 
+        public void ZoomIn_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                var scroll = this.FindControl<ScrollViewer>("MainScroll");
+                if (scroll?.Presenter != null)
+                {
+                    double oldZoom = vm.ZoomLevel;
+                    vm.ZoomLevel *= 1.2;
+                    scroll.UpdateLayout();
+                    
+                    // Zoom centered on viewport center
+                    var viewportCenter = new Point(scroll.Viewport.Width / 2, scroll.Viewport.Height / 2);
+                    var contentCenter = (scroll.Offset + viewportCenter) * (vm.ZoomLevel / oldZoom);
+                    scroll.Offset = contentCenter - viewportCenter;
+                }
+                else
+                {
+                    vm.ZoomLevel *= 1.2;
+                }
+            }
+        }
+
+        public void ZoomOut_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                var scroll = this.FindControl<ScrollViewer>("MainScroll");
+                if (scroll?.Presenter != null)
+                {
+                    double oldZoom = vm.ZoomLevel;
+                    vm.ZoomLevel /= 1.2;
+                    if (vm.ZoomLevel < 0.01) vm.ZoomLevel = 0.01;
+                    scroll.UpdateLayout();
+
+                    var viewportCenter = new Point(scroll.Viewport.Width / 2, scroll.Viewport.Height / 2);
+                    var contentCenter = (scroll.Offset + viewportCenter) * (vm.ZoomLevel / oldZoom);
+                    scroll.Offset = contentCenter - viewportCenter;
+                }
+                else
+                {
+                    vm.ZoomLevel /= 1.2;
+                    if (vm.ZoomLevel < 0.01) vm.ZoomLevel = 0.01;
+                }
+            }
+        }
+
         public void About_Click(object? sender, RoutedEventArgs e)
         {
             var aboutWindow = new Window
@@ -178,7 +350,7 @@ namespace Atelier.Views
                     Children =
                     {
                         new TextBlock { Text = "Atelier", FontSize = 32, FontWeight = FontWeight.Bold, Foreground = Brushes.White, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
-                        new TextBlock { Text = "v0.1.0", FontSize = 12, Foreground = Brushes.LightGray, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+                        new TextBlock { Text = "v0.2.45", FontSize = 12, Foreground = Brushes.LightGray, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
                         new TextBlock { Text = "by fezcode", FontSize = 14, FontWeight = FontWeight.Medium, Foreground = Brushes.DodgerBlue, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,0,0,15) },
                         new TextBlock { Text = "A modern, high-performance image viewer.", Foreground = Brushes.Gray, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap },
                         new TextBlock { Text = "Built with Avalonia UI & Magick.NET", Foreground = Brushes.Gray, FontSize = 10, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,20,0,0) }
@@ -426,6 +598,7 @@ namespace Atelier.Views
                 }
                 
                 // Disable regular middle mouse scroll as requested
+                // Handled = true is already here but let's make sure it doesn't do anything else
                 e.Handled = true;
             }
         }

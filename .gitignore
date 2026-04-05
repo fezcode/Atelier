@@ -9,3 +9,7 @@
 *.swp
 *.lock
 .gemini/
+
+
+Publish/
+Atelier_Installer_*
