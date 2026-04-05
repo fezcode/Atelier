@@ -158,7 +158,7 @@ namespace Atelier.Views
 
             var applyBtn = new Button
             {
-                Content = "Apply",
+                Content = "Save",
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 Padding = new Thickness(0, 8),
@@ -170,7 +170,7 @@ namespace Atelier.Views
             {
                 Title = "File Associations",
                 Width = 340,
-                Height = 400,
+                Height = 480,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 CanResize = false,
                 Background = new SolidColorBrush(Color.Parse("#1A1A1A")),
