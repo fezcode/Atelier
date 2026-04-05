@@ -1,0 +1,143 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Atelier.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Atelier.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Atelier"
+        Icon="/Assets/atelier-icon.ico"
+        Background="#0D0D0D"
+        FontFamily="Inter, Segoe UI, Arial, sans-serif"
+        DragDrop.AllowDrop="True">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0" Background="#1A1A1A" IsVisible="{Binding ShowControls}" 
+              FontFamily="Inter, Segoe UI, Arial, sans-serif" FontSize="12" FontWeight="Medium"
+              Padding="5,2">
+            <Menu.Styles>
+                <Style Selector="MenuItem">
+                    <Setter Property="Padding" Value="12,6"/>
+                </Style>
+            </Menu.Styles>
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open..." Click="OpenFileName_Click" InputGesture="Ctrl+O"/>
+                <MenuItem Header="_Save As..." Click="SaveAs_Click" InputGesture="Ctrl+S"/>
+                <Separator/>
+                <MenuItem Header="_Exit" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Full Screen" Click="FullScreen_Click" InputGesture="F"/>
+                <MenuItem Header="_Fit to Screen" Click="FitToScreen_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Click="About_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1" x:Name="MainGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="300" MinWidth="150" MaxWidth="600"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Viewer Area -->
+            <ScrollViewer Grid.Column="0" Name="MainScroll" 
+                          HorizontalScrollBarVisibility="Hidden" 
+                          VerticalScrollBarVisibility="Hidden" 
+                          Background="Transparent">
+                <Panel Name="ImagePanel" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <LayoutTransformControl Name="ZoomTransform">
+                        <LayoutTransformControl.LayoutTransform>
+                            <ScaleTransform ScaleX="{Binding ZoomLevel}" ScaleY="{Binding ZoomLevel}"/>
+                        </LayoutTransformControl.LayoutTransform>
+                        <Panel>
+                            <Image Source="{Binding ImageSource}" 
+                                   IsVisible="{Binding ImageSource, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                            
+                            <TextBlock Text="{Binding ErrorMessage}" 
+                                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Foreground="#FF5555" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            
+                            <TextBlock Text="Drop an image here or press Ctrl+O" 
+                                       IsVisible="{Binding ImagePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"
+                                       Foreground="#444444" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"/>
+                        </Panel>
+                    </LayoutTransformControl>
+                </Panel>
+            </ScrollViewer>
+
+            <!-- GridSplitter for Resizing -->
+            <GridSplitter Grid.Column="1" Width="4" Background="#333333" 
+                          ResizeDirection="Columns" IsVisible="{Binding ShowControls}"/>
+
+            <!-- Info Panel (Right) -->
+            <Border Grid.Column="2" Background="#1A1A1A" 
+                    BorderBrush="#333333" BorderThickness="1,0,0,0"
+                    IsVisible="{Binding ShowControls}"
+                    Padding="10">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="IMAGE METADATA" Foreground="#666666" FontSize="10" FontWeight="Bold" LetterSpacing="1" Margin="5,0,0,10"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding MetadataItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="5,2,5,8">
+                                        <TextBlock Text="{Binding Label}" Foreground="#555555" FontSize="10" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding Value}" Foreground="#DDDDDD" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Bottom Area -->
+        <StackPanel Grid.Row="2" Background="#1A1A1A">
+            <!-- Chevron Toggle -->
+            <Button HorizontalAlignment="Center" 
+                    Background="Transparent" 
+                    BorderThickness="0"
+                    Click="ToggleControls_Click"
+                    Padding="20,5">
+                <Path Data="{Binding ChevronData}" 
+                      Fill="#666666" 
+                      Width="12" Height="8" 
+                      Stretch="Uniform"/>
+            </Button>
+            
+            <!-- Controls & Status Bar -->
+            <StackPanel IsVisible="{Binding ShowControls}" Margin="10,0,10,10">
+                <!-- Navigation Buttons with Icons (Using simple paths for icons) -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20" Margin="0,0,0,10">
+                    <Button Click="Prev_Click" Background="#2A2A2A" Padding="15,8" ToolTip.Tip="Previous Image (Left Arrow)">
+                         <Path Data="M 10 0 L 0 5 L 10 10 Z" Fill="#CCCCCC" Width="10" Height="10" Stretch="Uniform"/>
+                    </Button>
+                    <Button Click="Next_Click" Background="#2A2A2A" Padding="15,8" ToolTip.Tip="Next Image (Right Arrow)">
+                         <Path Data="M 0 0 L 10 5 L 0 10 Z" Fill="#CCCCCC" Width="10" Height="10" Stretch="Uniform"/>
+                    </Button>
+                </StackPanel>
+
+                <Border Background="#111111" CornerRadius="4" Padding="10,5">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding ImagePath}" Foreground="#888888" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <Button Grid.Column="1" Click="ResetZoom_Click" Background="Transparent" BorderThickness="0" Padding="5,0" ToolTip.Tip="Reset Zoom (100%)">
+                             <TextBlock Text="{Binding ZoomLevel, StringFormat='Zoom: {0:P0}'}" Foreground="#BBBBBB" FontSize="11" VerticalAlignment="Center" FontWeight="Medium"/>
+                        </Button>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
