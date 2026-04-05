@@ -1,6 +1,6 @@
 # Atelier
 
-![Atelier](banner.png)
+![Atelier](Assets/banner.png)
 
 `Atelier` is a high-performance, modern image and SVG viewer built with **Avalonia UI** and **C#**. It provides a buttery-smooth viewing experience with native support for modern formats and advanced vector rendering.
 
