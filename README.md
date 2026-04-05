@@ -19,11 +19,20 @@
 - **`F`**: Toggle Fullscreen.
 - **Drag & Drop**: Drop any file to view.
 
+## Releases
+You can download the latest pre-built binaries from the [Releases](https://github.com/fezcode/Atelier/releases) page.
+
 ## Build Requirements
 - **.NET 8.0 SDK**
 
 ## Building & Running
-```bash
-cd D:\Workhammer\Atelier
-dotnet run
-```
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/fezcode/Atelier.git
+   cd Atelier
+   ```
+
+2. **Run the application**:
+   ```bash
+   dotnet run
+   ```
