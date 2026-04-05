@@ -57,8 +57,22 @@ namespace Atelier.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _showControls, value);
                 this.RaisePropertyChanged(nameof(ChevronData));
+                this.RaisePropertyChanged(nameof(IsRightPaneVisible));
             }
         }
+
+        private bool _showMetadata = true;
+        public bool ShowMetadata
+        {
+            get => _showMetadata;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _showMetadata, value);
+                this.RaisePropertyChanged(nameof(IsRightPaneVisible));
+            }
+        }
+
+        public bool IsRightPaneVisible => ShowControls && (IsEditMode || ShowMetadata);
 
         public string ChevronData => ShowControls ? "M 0 0 L 5 5 L 10 0" : "M 0 5 L 5 0 L 10 5";
 

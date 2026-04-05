@@ -5,10 +5,12 @@ using System.Runtime.InteropServices;
 using Atelier.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Platform;
 using Avalonia.Media.Imaging;
 using Avalonia.Svg.Skia;
 using Avalonia.Threading;
@@ -32,12 +34,37 @@ namespace Atelier.Views
                 scroll.PointerPressed += OnScrollPointerPressed;
                 scroll.PointerMoved += OnScrollPointerMoved;
                 scroll.PointerReleased += OnScrollPointerReleased;
+            }
 
-                // Auto-fit on initial load/resize if needed
-                scroll.SizeChanged += (s, e) => {
-                    // Could optionally auto-refit here
+            var dragArea = this.FindControl<Panel>("DragArea");
+            if (dragArea != null)
+            {
+                dragArea.PointerPressed += (s, e) =>
+                {
+                    if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                    {
+                        BeginMoveDrag(e);
+                    }
                 };
             }
+
+            DataContextChanged += (s, e) =>
+            {
+                if (DataContext is MainWindowViewModel vm)
+                {
+                    vm.PropertyChanged += (sender, args) =>
+                    {
+                        if (args.PropertyName == nameof(MainWindowViewModel.IsRightPaneVisible))
+                        {
+                            UpdateRightPaneGrid();
+                        }
+                        else if (args.PropertyName == nameof(MainWindowViewModel.IsEditMode))
+                        {
+                            UpdateRightPaneHeader();
+                        }
+                    };
+                }
+            };
         }
 
         private async void Drop(object? sender, DragEventArgs e)
@@ -112,6 +139,53 @@ namespace Atelier.Views
             }
         }
 
+        private void UpdateRightPaneHeader()
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                var header = this.FindControl<TextBlock>("RightPaneHeader");
+                if (header != null)
+                {
+                    header.Text = vm.IsEditMode ? "EDIT IMAGE" : "IMAGE METADATA";
+                }
+            }
+        }
+
+        private void UpdateRightPaneGrid()
+        {
+             if (DataContext is MainWindowViewModel vm)
+             {
+                var grid = this.FindControl<Grid>("MainGrid");
+                if (grid != null && grid.ColumnDefinitions.Count >= 3)
+                {
+                    var splitCol = grid.ColumnDefinitions[1];
+                    var rightCol = grid.ColumnDefinitions[2];
+
+                    if (vm.IsRightPaneVisible)
+                    {
+                        rightCol.Width = _lastRightColumnWidth;
+                        rightCol.MinWidth = 150;
+                        rightCol.MaxWidth = 600;
+                        splitCol.Width = GridLength.Auto;
+                    }
+                    else
+                    {
+                        if (rightCol.Width.IsAbsolute)
+                            _lastRightColumnWidth = rightCol.Width;
+                            
+                        rightCol.Width = new GridLength(0);
+                        rightCol.MinWidth = 0;
+                        rightCol.MaxWidth = 0;
+                        splitCol.Width = new GridLength(0);
+                    }
+                }
+
+                Dispatcher.UIThread.Post(() => {
+                    FitToView();
+                }, DispatcherPriority.Render);
+             }
+        }
+
         public async void FileAssociations_Click(object? sender, RoutedEventArgs e)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -130,8 +204,9 @@ namespace Atelier.Views
                     Content = $"{ext}  —  {desc}",
                     IsChecked = registered.Contains(ext),
                     Foreground = Brushes.White,
-                    FontSize = 13,
-                    Margin = new Thickness(0, 3)
+                    FontSize = 14,
+                    FontWeight = FontWeight.SemiBold,
+                    Margin = new Thickness(0, 4)
                 };
                 checkBoxes.Add(cb);
             }
@@ -140,9 +215,10 @@ namespace Atelier.Views
             {
                 Content = "Select All",
                 IsChecked = checkBoxes.All(cb => cb.IsChecked == true),
-                Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")),
-                FontSize = 12,
-                Margin = new Thickness(0, 0, 0, 8)
+                Foreground = Brushes.White,
+                FontSize = 13,
+                FontWeight = FontWeight.SemiBold,
+                Margin = new Thickness(0, 0, 0, 10)
             };
             selectAllCb.IsCheckedChanged += (_, _) =>
             {
@@ -152,36 +228,49 @@ namespace Atelier.Views
 
             var list = new StackPanel { Spacing = 2 };
             list.Children.Add(selectAllCb);
-            list.Children.Add(new Separator { Background = new SolidColorBrush(Color.Parse("#333333")), Margin = new Thickness(0, 2, 0, 6) });
+            list.Children.Add(new Separator { Background = new SolidColorBrush(Color.Parse("#333333")), Margin = new Thickness(0, 2, 0, 8) });
             foreach (var cb in checkBoxes)
                 list.Children.Add(cb);
 
             var applyBtn = new Button
             {
-                Content = "Save",
+                Classes = { "Modern" },
+                Content = "Save Associations",
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                Padding = new Thickness(0, 8),
+                Padding = new Thickness(0, 12, 0, 12),
                 Background = new SolidColorBrush(Color.Parse("#2A2A2A")),
-                Margin = new Thickness(0, 15, 0, 0)
+                Margin = new Thickness(0, 25, 0, 0),
+                FontWeight = FontWeight.ExtraBold,
+                FontSize = 14
             };
 
             var dialog = new Window
             {
                 Title = "File Associations",
-                Width = 340,
-                Height = 480,
+                Width = 400,
+                Height = 560,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 CanResize = false,
-                Background = new SolidColorBrush(Color.Parse("#1A1A1A")),
-                Content = new StackPanel
+                Background = new SolidColorBrush(Color.Parse("#0A0A0A")),
+                TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur },
+                ExtendClientAreaToDecorationsHint = true,
+                ExtendClientAreaTitleBarHeightHint = -1,
+                Content = new Border
                 {
-                    Margin = new Thickness(25, 20),
-                    Children =
+                    BorderBrush = new SolidColorBrush(Color.Parse("#222222")),
+                    BorderThickness = new Thickness(1),
+                    Margin = new Thickness(0),
+                    Child = new StackPanel
                     {
-                        new TextBlock { Text = "Choose which file types to open with Atelier:", Foreground = new SolidColorBrush(Color.Parse("#888888")), FontSize = 12, Margin = new Thickness(0, 0, 0, 12) },
-                        list,
-                        applyBtn
+                        Margin = new Thickness(35, 50, 35, 35),
+                        Children =
+                        {
+                            new TextBlock { Text = "FILE ASSOCIATIONS", Foreground = new SolidColorBrush(Color.Parse("#888888")), FontSize = 11, FontWeight = FontWeight.ExtraBold, LetterSpacing = 1.5, Margin = new Thickness(0, 0, 0, 25) },
+                            new TextBlock { Text = "Choose which file types to open with Atelier:", Foreground = Brushes.White, FontSize = 14, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 20) },
+                            new ScrollViewer { Content = list, Height = 320 },
+                            applyBtn
+                        }
                     }
                 }
             };
@@ -214,23 +303,22 @@ namespace Atelier.Views
             {
                 Title = title,
                 Width = 400,
-                Height = 200,
+                Height = 220,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 CanResize = false,
-                Background = new SolidColorBrush(Color.Parse("#1A1A1A")),
+                Background = new SolidColorBrush(Color.Parse("#0A0A0A")),
                 Content = new StackPanel
                 {
-                    Margin = new Thickness(25),
-                    Spacing = 20,
+                    Margin = new Thickness(30),
+                    Spacing = 25,
                     VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                     Children =
                     {
-                        new TextBlock { Text = message, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, FontSize = 13 },
-                        new Button { Content = "OK", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Padding = new Thickness(30, 8), Background = new SolidColorBrush(Color.Parse("#2A2A2A")) }
+                        new TextBlock { Text = message, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, FontSize = 14, TextAlignment = TextAlignment.Center },
+                        new Button { Classes = { "Modern" }, Content = "Got it", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Padding = new Thickness(40, 10), Background = new SolidColorBrush(Color.Parse("#2A2A2A")) }
                     }
                 }
             };
-            // Wire OK button to close
             if (dialog.Content is StackPanel sp && sp.Children[1] is Button okBtn)
                 okBtn.Click += (_, _) => dialog.Close();
             await dialog.ShowDialog(this);
@@ -337,23 +425,32 @@ namespace Atelier.Views
             var aboutWindow = new Window
             {
                 Title = "About Atelier",
-                Width = 350,
-                Height = 300,
+                Width = 450,
+                Height = 480,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 CanResize = false,
-                Background = new SolidColorBrush(Color.Parse("#1A1A1A")),
-                Content = new StackPanel
+                Background = new SolidColorBrush(Color.Parse("#0A0A0A")),
+                TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur },
+                ExtendClientAreaToDecorationsHint = true,
+                ExtendClientAreaTitleBarHeightHint = -1,
+                Content = new Border
                 {
-                    Margin = new Thickness(30),
-                    Spacing = 10,
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                    Children =
+                    BorderBrush = new SolidColorBrush(Color.Parse("#222222")),
+                    BorderThickness = new Thickness(1),
+                    Child = new StackPanel
                     {
-                        new TextBlock { Text = "Atelier", FontSize = 32, FontWeight = FontWeight.Bold, Foreground = Brushes.White, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
-                        new TextBlock { Text = "v0.2.45", FontSize = 12, Foreground = Brushes.LightGray, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
-                        new TextBlock { Text = "by fezcode", FontSize = 14, FontWeight = FontWeight.Medium, Foreground = Brushes.DodgerBlue, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,0,0,15) },
-                        new TextBlock { Text = "A modern, high-performance image viewer.", Foreground = Brushes.Gray, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap },
-                        new TextBlock { Text = "Built with Avalonia UI & Magick.NET", Foreground = Brushes.Gray, FontSize = 10, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,20,0,0) }
+                        Margin = new Thickness(40, 60, 40, 40),
+                        Spacing = 20,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                        Children =
+                        {
+                            new Image { Source = new Bitmap(AssetLoader.Open(new Uri("avares://Atelier/Assets/atelier-icon.png"))), Width = 96, Height = 96, Margin = new Thickness(0,0,0,10) },
+                            new TextBlock { Text = "ATELIER", FontSize = 48, FontWeight = FontWeight.ExtraBold, Foreground = Brushes.White, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, LetterSpacing = -1 },
+                            new TextBlock { Text = "v0.2.78", FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,0,0,15) },
+                            new TextBlock { Text = "A modern, high-performance image viewer built with Avalonia UI & Magick.NET.", FontWeight = FontWeight.Medium, Foreground = new SolidColorBrush(Color.Parse("#DDDDDD")), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, FontSize = 16 },
+                            new Rectangle { Height = 1, Fill = new SolidColorBrush(Color.Parse("#222222")), Margin = new Thickness(20,10) },
+                            new TextBlock { Text = "developed by fezcode", FontSize = 14, FontWeight = FontWeight.Bold, Foreground = Brushes.DodgerBlue, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center }
+                        }
                     }
                 }
             };
@@ -365,8 +462,8 @@ namespace Atelier.Views
             if (DataContext is MainWindowViewModel vm)
             {
                 vm.EnterEditMode();
-                // Ensure side pane is visible when editing
-                if (!vm.ShowControls) ToggleControls_Click(null, new RoutedEventArgs());
+                // Ensure controls are visible when editing
+                if (!vm.ShowControls) vm.ShowControls = true;
             }
         }
 
@@ -424,35 +521,7 @@ namespace Atelier.Views
             if (DataContext is MainWindowViewModel vm)
             {
                 vm.ShowControls = !vm.ShowControls;
-
-                var grid = this.FindControl<Grid>("MainGrid");
-                if (grid != null && grid.ColumnDefinitions.Count >= 3)
-                {
-                    var splitCol = grid.ColumnDefinitions[1];
-                    var rightCol = grid.ColumnDefinitions[2];
-
-                    if (vm.ShowControls)
-                    {
-                        rightCol.Width = _lastRightColumnWidth;
-                        rightCol.MinWidth = 150;
-                        rightCol.MaxWidth = 600;
-                        splitCol.Width = GridLength.Auto;
-                    }
-                    else
-                    {
-                        _lastRightColumnWidth = rightCol.Width;
-                        rightCol.Width = new GridLength(0);
-                        rightCol.MinWidth = 0;
-                        rightCol.MaxWidth = 0;
-                        splitCol.Width = new GridLength(0);
-                    }
-                }
-
-                // Refit after layout changes (right pane appearing/disappearing)
-                // Use a slightly lower priority or post to ensure layout is done
-                Dispatcher.UIThread.Post(() => {
-                    FitToView();
-                }, DispatcherPriority.Render);
+                // UpdateRightPaneGrid() will be called via PropertyChanged subscription in constructor
             }
         }
 

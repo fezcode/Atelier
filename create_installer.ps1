@@ -6,7 +6,7 @@ $workDir = Split-Path $scriptDir -Parent
 $builder = Join-Path $workDir "DeployPaladin\release\builder\DeployPaladin.Builder.exe"
 $base = Join-Path $workDir "DeployPaladin\release\installer\DeployPaladin.exe"
 $payload = $scriptDir
-$output = Join-Path $scriptDir "Atelier_Installer_0.2.45.exe"
+$output = Join-Path $scriptDir "Atelier_Installer_0.2.78.exe"
 
 Write-Host "Building installer..." -ForegroundColor Cyan
 
