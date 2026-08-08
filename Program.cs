@@ -20,7 +20,6 @@ sealed class Program
         GC.KeepAlive(typeof(SvgImageExtension).Assembly);
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithInterFont()
             .LogToTrace()
             .UseReactiveUI();
     }

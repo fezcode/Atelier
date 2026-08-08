@@ -14,20 +14,27 @@ namespace Atelier
             AvaloniaXamlLoader.Load(this);
         }
 
-        public override async void OnFrameworkInitializationCompleted()
+        public override void OnFrameworkInitializationCompleted()
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var viewModel = new MainWindowViewModel();
-                desktop.MainWindow = new MainWindow
-                {
-                    DataContext = viewModel
-                };
+                var window = new MainWindow { DataContext = new MainWindowViewModel() };
+                desktop.MainWindow = window;
 
-                // Handle Command Line Arguments
+                // Atelier registers itself for file associations, so "open with" is the
+                // common launch path. Kick the load off once the window is up rather than
+                // awaiting it here -- awaiting kept the window off-screen for the whole
+                // decode, so a large photo looked like a slow-starting app.
                 if (desktop.Args?.Length > 0)
                 {
-                    await viewModel.LoadImageAsync(desktop.Args[0]);
+                    var path = desktop.Args[0];
+                    window.Opened += OnStartupOpen;
+
+                    async void OnStartupOpen(object? sender, System.EventArgs e)
+                    {
+                        window.Opened -= OnStartupOpen;
+                        await window.LoadAndFitAsync(path);
+                    }
                 }
             }
 

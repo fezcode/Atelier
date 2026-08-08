@@ -100,6 +100,20 @@ namespace Atelier.ViewModels
             set => this.RaiseAndSetIfChanged(ref _imageHeight, value);
         }
 
+        private static readonly string[] NavigableExtensions =
+            { ".jpg", ".jpeg", ".png", ".bmp", ".webp", ".svg", ".heic", ".heif" };
+
+        /// <summary>Everything produced off the UI thread, ready to hand to the view.</summary>
+        private sealed class LoadedImage
+        {
+            public Bitmap? Bitmap;
+            public SvgSource? Svg;
+            public double Width;
+            public double Height;
+            public List<MetadataItem> Metadata = new();
+            public List<string> Siblings = new();
+        }
+
         public async Task LoadImageAsync(string path)
         {
             try
@@ -107,45 +121,28 @@ namespace Atelier.ViewModels
                 ErrorMessage = null;
                 ImagePath = path;
                 ZoomLevel = 1.0;
-                MetadataItems.Clear();
+                MetadataItems = new ObservableCollection<MetadataItem>();
 
-                string ext = Path.GetExtension(path).ToLower();
+                // Decoding, EXIF extraction and the directory scan are all file/CPU bound.
+                // They used to run on the UI thread, freezing the window for the whole load.
+                var loaded = await Task.Run(() => Decode(path));
 
-                if (ext == ".svg")
-                {
-                    var svgSource = SvgSource.Load(path, null);
-                    ImageSource = new SvgImage { Source = svgSource };
-                    if (svgSource?.Picture != null)
-                    {
-                        ImageWidth = svgSource.Picture.CullRect.Width;
-                        ImageHeight = svgSource.Picture.CullRect.Height;
-                    }
-                    ExtractBasicMetadata(path, "SVG Vector");
-                }
-                else if (ext == ".heic" || ext == ".heif" || ext == ".avif")
-                {
-                    using var image = new MagickImage(path);
-                    ImageWidth = image.Width;
-                    ImageHeight = image.Height;
-                    string formatLabel = ext == ".avif" ? "AVIF" : "HEIC";
-                    ExtractBasicMetadata(path, $"{formatLabel} {image.Width}x{image.Height}");
-                    using var ms = new MemoryStream();
-                    image.Write(ms, MagickFormat.Png);
-                    ms.Position = 0;
-                    ImageSource = new Bitmap(ms);
-                    ExtractExifMetadata(path);
-                }
-                else
-                {
-                    var bitmap = new Bitmap(path);
-                    ImageSource = bitmap;
-                    ImageWidth = bitmap.Size.Width;
-                    ImageHeight = bitmap.Size.Height;
-                    ExtractBasicMetadata(path, $"{(int)bitmap.Size.Width}x{(int)bitmap.Size.Height} {ext.ToUpper().TrimStart('.')}");
-                    ExtractExifMetadata(path);
-                }
+                // SvgImage is an AvaloniaObject and has thread affinity, so it is built here.
+                // Bitmap has none, so it is already decoded on the worker thread.
+                ImageSource = loaded.Svg != null
+                    ? new SvgImage { Source = loaded.Svg }
+                    : loaded.Bitmap;
 
-                UpdateFileList(path);
+                ImageWidth = loaded.Width;
+                ImageHeight = loaded.Height;
+
+                // One assignment instead of one CollectionChanged per tag -- a photo with a
+                // few hundred EXIF tags used to trigger a layout pass for every one of them.
+                MetadataItems = new ObservableCollection<MetadataItem>(loaded.Metadata);
+
+                _fileList = loaded.Siblings;
+                _currentIndex = _fileList.FindIndex(
+                    f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
             }
             catch (Exception ex)
             {
@@ -156,13 +153,76 @@ namespace Atelier.ViewModels
             }
         }
 
+        private static LoadedImage Decode(string path)
+        {
+            var result = new LoadedImage();
+
+            // Invariant casing: on a Turkish locale ToLower() maps 'I' to dotless 'ı',
+            // so ".HEIF"/".AVIF"/".ICO" would never match the comparisons below.
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+
+            if (ext == ".svg")
+            {
+                result.Svg = SvgSource.Load(path, null);
+                if (result.Svg?.Picture != null)
+                {
+                    result.Width = result.Svg.Picture.CullRect.Width;
+                    result.Height = result.Svg.Picture.CullRect.Height;
+                }
+                AddBasicMetadata(result.Metadata, path, "SVG Vector");
+            }
+            else if (ext == ".heic" || ext == ".heif" || ext == ".avif")
+            {
+                using var image = new MagickImage(path);
+                result.Width = image.Width;
+                result.Height = image.Height;
+                string formatLabel = ext == ".avif" ? "AVIF" : "HEIC";
+                AddBasicMetadata(result.Metadata, path, $"{formatLabel} {image.Width}x{image.Height}");
+
+                using var ms = new MemoryStream();
+                image.Write(ms, MagickFormat.Png);
+                ms.Position = 0;
+                result.Bitmap = new Bitmap(ms);
+                AddExifMetadata(result.Metadata, path);
+            }
+            else
+            {
+                var bitmap = new Bitmap(path);
+                result.Bitmap = bitmap;
+                result.Width = bitmap.Size.Width;
+                result.Height = bitmap.Size.Height;
+                AddBasicMetadata(result.Metadata, path,
+                    $"{(int)bitmap.Size.Width}x{(int)bitmap.Size.Height} {ext.ToUpperInvariant().TrimStart('.')}");
+                AddExifMetadata(result.Metadata, path);
+            }
+
+            result.Siblings = ScanSiblings(Path.GetDirectoryName(path));
+            return result;
+        }
+
+        private static List<string> ScanSiblings(string? dir)
+        {
+            if (dir == null) return new List<string>();
+            try
+            {
+                return System.IO.Directory.GetFiles(dir)
+                    .Where(f => NavigableExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                    .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
         public async Task SaveImageAsync(string destinationPath)
         {
             if (string.IsNullOrEmpty(ImagePath)) return;
 
             try
             {
-                string ext = Path.GetExtension(destinationPath).ToLower();
+                string ext = Path.GetExtension(destinationPath).ToLowerInvariant();
                 MagickFormat format = ext switch
                 {
                     ".jpg" or ".jpeg" => MagickFormat.Jpeg,
@@ -181,7 +241,7 @@ namespace Atelier.ViewModels
                     try
                     {
                         var readSettings = new MagickReadSettings();
-                        if (Path.GetExtension(ImagePath).ToLower() == ".svg")
+                        if (Path.GetExtension(ImagePath).ToLowerInvariant() == ".svg")
                         {
                             readSettings.Format = MagickFormat.Svg;
                             readSettings.Density = new Density(300);
@@ -228,14 +288,14 @@ namespace Atelier.ViewModels
             }
         }
 
-        private void ExtractBasicMetadata(string path, string typeInfo)
+        private static void AddBasicMetadata(List<MetadataItem> items, string path, string typeInfo)
         {
             var info = new FileInfo(path);
-            MetadataItems.Add(new MetadataItem { Label = "Name", Value = info.Name });
-            MetadataItems.Add(new MetadataItem { Label = "Format", Value = typeInfo });
-            MetadataItems.Add(new MetadataItem { Label = "Size", Value = FormatFileSize(info.Length) });
-            MetadataItems.Add(new MetadataItem { Label = "Location", Value = info.DirectoryName ?? "" });
-            MetadataItems.Add(new MetadataItem { Label = "Created", Value = info.CreationTime.ToString("g") });
+            items.Add(new MetadataItem { Label = "Name", Value = info.Name });
+            items.Add(new MetadataItem { Label = "Format", Value = typeInfo });
+            items.Add(new MetadataItem { Label = "Size", Value = FormatFileSize(info.Length) });
+            items.Add(new MetadataItem { Label = "Location", Value = info.DirectoryName ?? "" });
+            items.Add(new MetadataItem { Label = "Created", Value = info.CreationTime.ToString("g") });
         }
 
         private static string FormatFileSize(long bytes)
@@ -251,39 +311,19 @@ namespace Atelier.ViewModels
             return $"{size:0.##} {units[unitIndex]}";
         }
 
-        private void ExtractExifMetadata(string path)
+        private static void AddExifMetadata(List<MetadataItem> items, string path)
         {
             try
             {
                 var directories = ImageMetadataReader.ReadMetadata(path);
                 foreach (var directory in directories)
                 {
+                    if (!directory.Name.Contains("Exif") && directory.Name != "JPEG" && directory.Name != "PNG")
+                        continue;
+
                     foreach (var tag in directory.Tags)
-                    {
-                        if (directory.Name.Contains("Exif") || directory.Name == "JPEG" || directory.Name == "PNG")
-                        {
-                             MetadataItems.Add(new MetadataItem { Label = tag.Name, Value = tag.Description ?? "" });
-                        }
-                    }
+                        items.Add(new MetadataItem { Label = tag.Name, Value = tag.Description ?? "" });
                 }
-            }
-            catch { }
-        }
-
-        private void UpdateFileList(string currentPath)
-        {
-            try
-            {
-                string? dir = Path.GetDirectoryName(currentPath);
-                if (dir == null) return;
-
-                var extensions = new[] { ".jpg", ".jpeg", ".png", ".bmp", ".webp", ".svg", ".heic", ".heif" };
-                _fileList = System.IO.Directory.GetFiles(dir)
-                    .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()))
-                    .OrderBy(f => f)
-                    .ToList();
-
-                _currentIndex = _fileList.IndexOf(currentPath);
             }
             catch { }
         }
@@ -343,7 +383,7 @@ namespace Atelier.ViewModels
 
         public void EnterEditMode()
         {
-            if (string.IsNullOrEmpty(ImagePath) || Path.GetExtension(ImagePath).ToLower() == ".svg") return;
+            if (string.IsNullOrEmpty(ImagePath) || Path.GetExtension(ImagePath).ToLowerInvariant() == ".svg") return;
 
             try
             {

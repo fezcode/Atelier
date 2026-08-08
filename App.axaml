@@ -12,7 +12,7 @@
         
         <!-- Global App Styling -->
         <Style Selector="Window">
-            <Setter Property="FontFamily" Value="avares://Atelier/Assets/Exo-VariableFont_wght.ttf#Exo, Inter, Segoe UI, Arial, sans-serif"/>
+            <Setter Property="FontFamily" Value="avares://Atelier/Assets/Exo-VariableFont_wght.ttf#Exo, Segoe UI, Arial, sans-serif"/>
             <Setter Property="FontWeight" Value="Medium"/>
         </Style>
 

@@ -2,15 +2,40 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <!-- Single source of truth for the version: the About dialog reads it back off the
+         assembly, and forge.toml must be kept in step with it. -->
+    <Version>0.2.79</Version>
+    <Company>Fezcode</Company>
+    <Product>Atelier</Product>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\atelier-icon.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
+  <!-- Startup performance. ReadyToRun precompiles IL to native so the bulk of the
+       Avalonia/ReactiveUI startup path is not JITted on every launch. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <TieredPGO>true</TieredPGO>
+    <TieredCompilationQuickJitForLoops>true</TieredCompilationQuickJitForLoops>
+    <AutoreleasePoolSupport>false</AutoreleasePoolSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+  </PropertyGroup>
+
   <ItemGroup>
     <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <!-- The test project lives under Tests\ inside this folder, so the SDK's default
+       **\*.cs glob would otherwise compile it (and its obj\ output) into the app. -->
+  <ItemGroup>
+    <Compile Remove="Tests\**" />
+    <EmbeddedResource Remove="Tests\**" />
+    <None Remove="Tests\**" />
+    <AvaloniaXaml Remove="Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,13 +44,16 @@
     <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.0" />
     <PackageReference Include="Avalonia.Svg.Skia" Version="11.1.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0" />
     <PackageReference Include="Avalonia.Diagnostics" Version="11.1.0">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.11.1" />
-    <PackageReference Include="MetadataExtractor" Version="2.9.2" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.16.0" />
+    <PackageReference Include="MetadataExtractor" Version="2.9.3" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <!-- Pulled in transitively by Avalonia for Linux/DBus. Avalonia 11.1.0 asks for
+         0.16.0, which carries GHSA-xrw6-gwf8-vvr9 (High). Atelier only ships win-x64
+         so the code never runs, but pinning it here keeps the audit clean. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
   </ItemGroup>
 </Project>

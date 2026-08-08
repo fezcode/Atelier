@@ -12,7 +12,7 @@
         TransparencyLevelHint="Mica, AcrylicBlur"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="-1"
-        FontFamily="avares://Atelier/Assets/Exo-VariableFont_wght.ttf#Exo, Inter, Segoe UI, Arial, sans-serif"
+        FontFamily="avares://Atelier/Assets/Exo-VariableFont_wght.ttf#Exo, Segoe UI, Arial, sans-serif"
         DragDrop.AllowDrop="True">
 
     <Design.DataContext>
@@ -73,7 +73,7 @@
                         <LayoutTransformControl.LayoutTransform>
                             <ScaleTransform ScaleX="{Binding ZoomLevel}" ScaleY="{Binding ZoomLevel}"/>
                         </LayoutTransformControl.LayoutTransform>
-                        <Panel>
+                        <Panel Name="ZoomContent">
                             <Image Source="{Binding ImageSource}" 
                                    IsVisible="{Binding ImageSource, Converter={x:Static ObjectConverters.IsNotNull}}"
                                    RenderOptions.BitmapInterpolationMode="HighQuality">

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Atelier.ViewModels;
 using Avalonia;
@@ -23,17 +24,39 @@ namespace Atelier.Views
         private Point _lastMousePos;
         private GridLength _lastRightColumnWidth = new GridLength(300);
 
+        private const double ZoomStep = 1.1;
+        private const double ButtonZoomStep = 1.2;
+        private const double MinZoom = 0.01;
+        private const double MaxZoom = 64.0;
+        private const double ShiftPanStep = 50.0;
+
+        /// <summary>Read off the assembly so it tracks &lt;Version&gt; in Atelier.csproj.</summary>
+        private static readonly string AppVersion =
+            typeof(MainWindow).Assembly
+                .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+                ?.InformationalVersion.Split('+')[0]
+            ?? typeof(MainWindow).Assembly.GetName().Version?.ToString(3)
+            ?? "dev";
+
         public MainWindow()
         {
             InitializeComponent();
             AddHandler(DragDrop.DropEvent, Drop);
-            
+
             var scroll = this.FindControl<ScrollViewer>("MainScroll");
             if (scroll != null)
             {
                 scroll.PointerPressed += OnScrollPointerPressed;
                 scroll.PointerMoved += OnScrollPointerMoved;
                 scroll.PointerReleased += OnScrollPointerReleased;
+
+                // The wheel must be claimed during the TUNNEL phase. PointerWheelChanged
+                // bubbles, so ScrollContentPresenter's class handler would otherwise run
+                // first: it scrolls whenever Extent > Viewport and marks the event handled,
+                // which stops it ever reaching our zoom code. Tunnelling on the ScrollViewer
+                // beats the presenter while leaving the metadata/edit panes free to scroll.
+                scroll.AddHandler(InputElement.PointerWheelChangedEvent, OnViewerWheel,
+                    RoutingStrategies.Tunnel, handledEventsToo: true);
             }
 
             var dragArea = this.FindControl<Panel>("DragArea");
@@ -74,17 +97,22 @@ namespace Atelier.Views
             };
         }
 
+        /// <summary>Loads an image and fits it to the viewer once layout has caught up.</summary>
+        public async System.Threading.Tasks.Task LoadAndFitAsync(string path)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                await vm.LoadImageAsync(path);
+                Dispatcher.UIThread.Post(FitToView, DispatcherPriority.Loaded);
+            }
+        }
+
         private async void Drop(object? sender, DragEventArgs e)
         {
             var files = e.Data.GetFiles();
             if (files != null && files.FirstOrDefault() is { } file)
             {
-                if (DataContext is MainWindowViewModel vm)
-                {
-                    await vm.LoadImageAsync(file.Path.LocalPath);
-                    // Give layout a moment to update then fit
-                    Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
-                }
+                await LoadAndFitAsync(file.Path.LocalPath);
             }
         }
 
@@ -108,11 +136,7 @@ namespace Atelier.Views
 
             if (files.Count >= 1)
             {
-                if (DataContext is MainWindowViewModel vm)
-                {
-                    await vm.LoadImageAsync(files[0].Path.LocalPath);
-                    Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
-                }
+                await LoadAndFitAsync(files[0].Path.LocalPath);
             }
         }
 
@@ -380,51 +404,89 @@ namespace Atelier.Views
             FitToView();
         }
 
-        public void ZoomIn_Click(object? sender, RoutedEventArgs e)
+        public void ZoomIn_Click(object? sender, RoutedEventArgs e) => ZoomAroundViewportCentre(ButtonZoomStep);
+
+        public void ZoomOut_Click(object? sender, RoutedEventArgs e) => ZoomAroundViewportCentre(1 / ButtonZoomStep);
+
+        private void ZoomAroundViewportCentre(double factor)
         {
-            if (DataContext is MainWindowViewModel vm)
+            var scroll = this.FindControl<ScrollViewer>("MainScroll");
+            if (scroll?.Presenter == null) return;
+
+            var centre = new Point(scroll.Viewport.Width / 2, scroll.Viewport.Height / 2);
+            ZoomAnchored(scroll, factor, centre);
+        }
+
+        /// <summary>
+        /// Scales by <paramref name="factor"/> while keeping the image pixel currently sitting
+        /// under <paramref name="anchorInViewport"/> (a point in ScrollContentPresenter
+        /// coordinates) pinned to that same spot.
+        /// </summary>
+        /// <remarks>
+        /// The anchor is captured in the unscaled coordinate space of the content inside the
+        /// LayoutTransformControl, then re-measured after layout and the difference applied to
+        /// Offset. Deriving the correction from the actual post-layout transform — rather than
+        /// multiplying the old offset by the zoom ratio — is what makes this correct when the
+        /// content is smaller than the viewport: ImagePanel is centre-aligned, so the content
+        /// origin is not the extent origin and a pure ratio calculation drifts.
+        /// </remarks>
+        private void ZoomAnchored(ScrollViewer scroll, double factor, Point anchorInViewport)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+
+            double target = Math.Clamp(vm.ZoomLevel * factor, MinZoom, MaxZoom);
+            if (Math.Abs(target - vm.ZoomLevel) < double.Epsilon) return;
+
+            var presenter = scroll.Presenter;
+            var content = this.FindControl<Panel>("ZoomContent");
+
+            if (presenter == null || content == null)
             {
-                var scroll = this.FindControl<ScrollViewer>("MainScroll");
-                if (scroll?.Presenter != null)
-                {
-                    double oldZoom = vm.ZoomLevel;
-                    vm.ZoomLevel *= 1.2;
-                    scroll.UpdateLayout();
-                    
-                    // Zoom centered on viewport center
-                    var viewportCenter = new Point(scroll.Viewport.Width / 2, scroll.Viewport.Height / 2);
-                    var contentCenter = (scroll.Offset + viewportCenter) * (vm.ZoomLevel / oldZoom);
-                    scroll.Offset = contentCenter - viewportCenter;
-                }
-                else
-                {
-                    vm.ZoomLevel *= 1.2;
-                }
+                vm.ZoomLevel = target;
+                return;
+            }
+
+            // The image pixel under the anchor, in unscaled content coordinates. Invariant.
+            var pixel = presenter.TranslatePoint(anchorInViewport, content);
+
+            vm.ZoomLevel = target;
+            scroll.UpdateLayout();
+
+            if (pixel is { } p && content.TranslatePoint(p, presenter) is { } landed)
+            {
+                // Offset is clamped by the ScrollViewer, which is exactly what we want once
+                // the content becomes smaller than the viewport and re-centres itself.
+                scroll.Offset += landed - anchorInViewport;
             }
         }
 
-        public void ZoomOut_Click(object? sender, RoutedEventArgs e)
+        /// <summary>
+        /// Tunnel-phase wheel handler for the image viewer. Ctrl+wheel zooms about the cursor,
+        /// Shift+wheel pans horizontally, and a bare wheel is deliberately inert.
+        /// </summary>
+        private void OnViewerWheel(object? sender, PointerWheelEventArgs e)
         {
-            if (DataContext is MainWindowViewModel vm)
-            {
-                var scroll = this.FindControl<ScrollViewer>("MainScroll");
-                if (scroll?.Presenter != null)
-                {
-                    double oldZoom = vm.ZoomLevel;
-                    vm.ZoomLevel /= 1.2;
-                    if (vm.ZoomLevel < 0.01) vm.ZoomLevel = 0.01;
-                    scroll.UpdateLayout();
+            if (DataContext is not MainWindowViewModel vm) return;
 
-                    var viewportCenter = new Point(scroll.Viewport.Width / 2, scroll.Viewport.Height / 2);
-                    var contentCenter = (scroll.Offset + viewportCenter) * (vm.ZoomLevel / oldZoom);
-                    scroll.Offset = contentCenter - viewportCenter;
-                }
+            var scroll = this.FindControl<ScrollViewer>("MainScroll");
+            if (scroll == null) return;
+
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                if (scroll.Presenter != null)
+                    ZoomAnchored(scroll, e.Delta.Y > 0 ? ZoomStep : 1 / ZoomStep,
+                        e.GetPosition(scroll.Presenter));
                 else
-                {
-                    vm.ZoomLevel /= 1.2;
-                    if (vm.ZoomLevel < 0.01) vm.ZoomLevel = 0.01;
-                }
+                    vm.ZoomLevel = Math.Clamp(vm.ZoomLevel * (e.Delta.Y > 0 ? ZoomStep : 1 / ZoomStep),
+                        MinZoom, MaxZoom);
             }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            {
+                scroll.Offset = scroll.Offset.WithX(scroll.Offset.X - e.Delta.Y * ShiftPanStep);
+            }
+
+            // Claimed either way: a bare wheel does nothing over the image.
+            e.Handled = true;
         }
 
         public void About_Click(object? sender, RoutedEventArgs e)
@@ -453,7 +515,7 @@ namespace Atelier.Views
                         {
                             new Image { Source = new Bitmap(AssetLoader.Open(new Uri("avares://Atelier/Assets/atelier-icon.png"))), Width = 96, Height = 96, Margin = new Thickness(0,0,0,10) },
                             new TextBlock { Text = "ATELIER", FontSize = 48, FontWeight = FontWeight.ExtraBold, Foreground = Brushes.White, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, LetterSpacing = -1 },
-                            new TextBlock { Text = "v0.2.78", FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,0,0,15) },
+                            new TextBlock { Text = $"v{AppVersion}", FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,0,0,15) },
                             new TextBlock { Text = "A modern, high-performance image viewer built with Avalonia UI & Magick.NET.", FontWeight = FontWeight.Medium, Foreground = new SolidColorBrush(Color.Parse("#DDDDDD")), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, FontSize = 16 },
                             new Rectangle { Height = 1, Fill = new SolidColorBrush(Color.Parse("#222222")), Margin = new Thickness(20,10) },
                             new TextBlock { Text = "developed by fezcode", FontSize = 14, FontWeight = FontWeight.Bold, Foreground = Brushes.DodgerBlue, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center }
@@ -630,53 +692,5 @@ namespace Atelier.Views
             }
         }
 
-        protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
-        {
-            if (DataContext is MainWindowViewModel vm)
-            {
-                // Ctrl + Scroll = Zoom (Highest priority)
-                if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
-                {
-                    double delta = e.Delta.Y > 0 ? 1.1 : 0.9;
-                    
-                    var scroll = this.FindControl<ScrollViewer>("MainScroll");
-                    if (scroll?.Presenter?.Child != null)
-                    {
-                        var mousePos = e.GetPosition(scroll.Presenter.Child);
-                        double oldZoom = vm.ZoomLevel;
-                        vm.ZoomLevel *= delta;
-                        if (vm.ZoomLevel < 0.01) vm.ZoomLevel = 0.01;
-
-                        scroll.UpdateLayout();
-
-                        var newMousePos = mousePos * (vm.ZoomLevel / oldZoom);
-                        var scrollMousePos = e.GetPosition(scroll.Presenter);
-                        scroll.Offset = new Vector(newMousePos.X - scrollMousePos.X, newMousePos.Y - scrollMousePos.Y);
-                    }
-                    else
-                    {
-                        vm.ZoomLevel *= delta;
-                    }
-                    
-                    e.Handled = true;
-                    return;
-                }
-                // Shift + Scroll = Horizontal Move
-                else if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
-                {
-                    var scroll = this.FindControl<ScrollViewer>("MainScroll");
-                    if (scroll != null)
-                    {
-                        scroll.Offset = scroll.Offset.WithX(scroll.Offset.X - (e.Delta.Y * 50));
-                        e.Handled = true;
-                    }
-                    return;
-                }
-                
-                // Disable regular middle mouse scroll as requested
-                // Handled = true is already here but let's make sure it doesn't do anything else
-                e.Handled = true;
-            }
-        }
     }
 }
