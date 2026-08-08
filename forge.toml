@@ -22,10 +22,11 @@ theme        = "mica"
 window_title = "Atelier ${app.version} Setup"
 
 [install]
-# Per-user under LOCALAPPDATA so setup never needs UAC -- matching the HKCU-only
-# registration below. A ${PROGRAMFILES} path here would make the install
-# per-machine and prompt for elevation.
-default_dir = "${LOCALAPPDATA}/Programs/Atelier"
+# Program Files, matching Descry and Timp -- and matching where the old Lua
+# installer put Atelier 0.2.78, so an upgrade replaces that copy instead of
+# leaving two installs side by side. Forge elevates automatically for this path.
+# File associations stay per-user (HKCU) regardless of where the app lives.
+default_dir = "${PROGRAMFILES}/Atelier"
 
 [uninstall]
 keep = []
@@ -40,21 +41,32 @@ body  = "This will install Atelier ${app.version} on your computer.\n\nAtelier i
 [[steps]]
 type           = "license"
 title          = "License Agreement"
+body           = "Please review the license terms below before continuing."
 file           = "LICENSE.txt"
 require_scroll = true
 
+# Every step needs an explicit title and body: the themes render
+# step.title/step.body directly, so a step without them draws a blank pane --
+# which is what the install step did before.
 [[steps]]
-type = "folder"
+type  = "folder"
+title = "Select Folder"
+body  = "Choose where to install Atelier ${app.version}."
 
 [[steps]]
-type = "shortcuts"
+type  = "shortcuts"
+title = "Select Optional Tasks"
+body  = "Check the items you would like the installer to perform."
 
 [[steps]]
-type = "install"
+type  = "install"
+title = "Installing..."
+body  = "Copying files to your system."
 
 [[steps]]
-type = "finish"
-body = "Atelier has been installed successfully.\n\nYou can set which file types open with Atelier from File -> File Associations."
+type  = "finish"
+title = "Installation Complete"
+body  = "Atelier has been installed successfully.\n\nYou can set which file types open with Atelier from File -> File Associations."
 
 [[steps.launches]]
 kind    = "app"

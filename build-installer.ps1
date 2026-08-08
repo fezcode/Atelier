@@ -48,7 +48,23 @@ finally {
 }
 
 Write-Host ""
-Get-ChildItem (Join-Path $scriptDir "dist") -Filter *.exe |
-    ForEach-Object {
-        Write-Host ("Installer: {0} ({1} MB)" -f $_.FullName, [math]::Round($_.Length / 1MB, 1)) -ForegroundColor Green
-    }
+
+# Retry the listing: the freshly written ~86 MB exe is not always visible to this
+# process immediately (Defender scans it on close), so a single Get-ChildItem here
+# can come back empty and make a successful build look like a failed one.
+$distDir = Join-Path $scriptDir "dist"
+$built = @()
+foreach ($attempt in 1..10) {
+    $built = @(Get-ChildItem $distDir -Filter *.exe -ErrorAction SilentlyContinue)
+    if ($built.Count -gt 0) { break }
+    Start-Sleep -Milliseconds 300
+}
+
+if ($built.Count -eq 0) {
+    Write-Host "forge build reported success but no installer appeared in $distDir." -ForegroundColor Red
+    exit 1
+}
+
+$built | ForEach-Object {
+    Write-Host ("Installer: {0} ({1} MB)" -f $_.FullName, [math]::Round($_.Length / 1MB, 1)) -ForegroundColor Green
+}
