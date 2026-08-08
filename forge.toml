@@ -6,7 +6,7 @@
 
 [app]
 name    = "Atelier"
-version = "0.2.79"
+version = "0.2.80"
 id      = "com.fezcode.atelier"
 icon    = "Assets/atelier-icon.ico"
 
