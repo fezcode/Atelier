@@ -17,7 +17,8 @@ support_url = "https://github.com/fezcode/Atelier/issues"
 comments    = "A modern, high-performance image and SVG viewer built with Avalonia UI and Magick.NET."
 
 [ui]
-theme        = "atelier"
+# mica = the Windows 11 look, so setup feels native rather than branded.
+theme        = "mica"
 window_title = "Atelier ${app.version} Setup"
 
 [install]
