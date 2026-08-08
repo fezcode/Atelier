@@ -35,6 +35,9 @@
                         <MenuItem Header="_Open..." Click="OpenFileName_Click" InputGesture="Ctrl+O"/>
                         <MenuItem Header="_Save As..." Click="SaveAs_Click" InputGesture="Ctrl+S"/>
                         <Separator/>
+                        <MenuItem Header="Open File _Location" Click="OpenFileLocation_Click"
+                                  IsEnabled="{Binding HasImage}"/>
+                        <Separator/>
                         <MenuItem Header="File _Associations..." Click="FileAssociations_Click"/>
                         <Separator/>
                         <MenuItem Header="_Exit" Click="Exit_Click"/>
@@ -107,9 +110,22 @@
                     Padding="0">
                 <Grid RowDefinitions="Auto,*">
                     <!-- Right Pane Header -->
-                    <Border Grid.Row="0" Background="#111111" Padding="15,10" BorderBrush="#222222" BorderThickness="0,0,0,1">
-                        <TextBlock Text="IMAGE INFO" x:Name="RightPaneHeader"
-                                   Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" LetterSpacing="1"/>
+                    <Border Grid.Row="0" Background="#111111" Padding="15,6,8,6" BorderBrush="#222222" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="IMAGE INFO" x:Name="RightPaneHeader"
+                                       VerticalAlignment="Center"
+                                       Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" LetterSpacing="1"/>
+                            <!-- Only in view mode: in edit mode this pane holds the editor, and
+                                 hiding metadata would not close it. -->
+                            <Button Grid.Column="1" Name="CloseMetadataButton"
+                                    Classes="Icon" Click="CloseMetadata_Click"
+                                    IsVisible="{Binding IsViewMode}"
+                                    Width="24" Height="24" Padding="0"
+                                    ToolTip.Tip="Hide metadata (View &gt; Image Metadata)">
+                                <Path Data="M 0 0 L 10 10 M 10 0 L 0 10" Stroke="#AAAAAA" StrokeThickness="1.5"
+                                      Width="9" Height="9" Stretch="Uniform"/>
+                            </Button>
+                        </Grid>
                     </Border>
 
                     <Panel Grid.Row="1" Margin="15">

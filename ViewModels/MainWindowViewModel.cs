@@ -32,8 +32,15 @@ namespace Atelier.ViewModels
         public string? ImagePath
         {
             get => _imagePath;
-            set => this.RaiseAndSetIfChanged(ref _imagePath, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _imagePath, value);
+                this.RaisePropertyChanged(nameof(HasImage));
+            }
         }
+
+        /// <summary>Greys out the menu items that act on the file on disk.</summary>
+        public bool HasImage => !string.IsNullOrEmpty(ImagePath);
 
         private string? _errorMessage;
         public string? ErrorMessage

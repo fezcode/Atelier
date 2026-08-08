@@ -16,8 +16,33 @@ if (-not (Test-Path $forge)) {
     exit 1
 }
 
-$forgeVersion = (& $forge --version | Out-String).Trim()
-Write-Host "Using $forge -- $forgeVersion" -ForegroundColor DarkGray
+# forge.exe is linked with -H windowsgui. PowerShell's call operator does NOT wait
+# for a GUI-subsystem process: `& $forge build` returns immediately, so the script
+# raced ahead to look for an installer that was still being written, and
+# $LASTEXITCODE was never set -- meaning a genuine forge failure read as success.
+# Start-Process -Wait gives us both the wait and a real exit code.
+function Invoke-Forge {
+    param([Parameter(Mandatory = $true)][string[]] $ForgeArgs)
+
+    $outFile = [System.IO.Path]::GetTempFileName()
+    $errFile = [System.IO.Path]::GetTempFileName()
+    try {
+        $proc = Start-Process -FilePath $forge -ArgumentList $ForgeArgs `
+            -NoNewWindow -Wait -PassThru `
+            -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+
+        Get-Content $outFile -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ }
+        Get-Content $errFile -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+
+        return $proc.ExitCode
+    }
+    finally {
+        Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
+$forgeVersion = (Invoke-Forge @("--version")) | Out-Null
+Write-Host "Using $forge" -ForegroundColor DarkGray
 
 # 1. Publish the app (self-contained, ReadyToRun, not single-file).
 & (Join-Path $scriptDir "publish.ps1")
@@ -29,16 +54,14 @@ if ($LASTEXITCODE -ne 0) {
 # 2. Validate the manifest before spending time bundling ~140 MB of payload.
 Push-Location $scriptDir
 try {
-    & $forge validate
-    if ($LASTEXITCODE -ne 0) {
+    if ((Invoke-Forge @("validate")) -ne 0) {
         Write-Host "forge.toml is invalid." -ForegroundColor Red
         exit 1
     }
 
     Write-Host ""
     Write-Host "Building installer..." -ForegroundColor Cyan
-    & $forge build
-    if ($LASTEXITCODE -ne 0) {
+    if ((Invoke-Forge @("build")) -ne 0) {
         Write-Host "Installer build failed." -ForegroundColor Red
         exit 1
     }
@@ -48,20 +71,9 @@ finally {
 }
 
 Write-Host ""
-
-# Retry the listing: the freshly written ~86 MB exe is not always visible to this
-# process immediately (Defender scans it on close), so a single Get-ChildItem here
-# can come back empty and make a successful build look like a failed one.
-$distDir = Join-Path $scriptDir "dist"
-$built = @()
-foreach ($attempt in 1..10) {
-    $built = @(Get-ChildItem $distDir -Filter *.exe -ErrorAction SilentlyContinue)
-    if ($built.Count -gt 0) { break }
-    Start-Sleep -Milliseconds 300
-}
-
+$built = @(Get-ChildItem (Join-Path $scriptDir "dist") -Filter *.exe -ErrorAction SilentlyContinue)
 if ($built.Count -eq 0) {
-    Write-Host "forge build reported success but no installer appeared in $distDir." -ForegroundColor Red
+    Write-Host "forge build reported success but produced no installer." -ForegroundColor Red
     exit 1
 }
 

@@ -170,6 +170,67 @@ namespace Atelier.Views
             }
         }
 
+        /// <summary>
+        /// Reveals the current image in File Explorer with the file selected.
+        /// </summary>
+        public void OpenFileLocation_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            if (string.IsNullOrEmpty(vm.ImagePath)) return;
+
+            // GetFullPath normalises separators: explorer treats a forward slash as
+            // part of the name and silently falls back to Documents.
+            var path = System.IO.Path.GetFullPath(vm.ImagePath);
+
+            try
+            {
+                if (System.IO.File.Exists(path))
+                {
+                    // The comma binds /select to the argument and there is no space
+                    // after it -- "explorer /select, <path>" opens Documents instead.
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"/select,\"{path}\"",
+                        UseShellExecute = true
+                    });
+                    return;
+                }
+
+                // The file moved or was deleted while open -- still useful to land in
+                // the folder it came from, if that survives.
+                var dir = System.IO.Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir) && System.IO.Directory.Exists(dir))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = dir,
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    vm.ErrorMessage = $"Folder no longer exists: {dir}";
+                }
+            }
+            catch (Exception ex)
+            {
+                vm.ErrorMessage = $"Could not open file location: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// The metadata pane's close button. Mirrors View &gt; Image Metadata, which
+        /// stays checkable so the pane can be brought back.
+        /// </summary>
+        public void CloseMetadata_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                vm.ShowMetadata = false;
+            }
+        }
+
         private void UpdateRightPaneHeader()
         {
             if (DataContext is MainWindowViewModel vm)

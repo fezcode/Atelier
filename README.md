@@ -15,9 +15,13 @@
 
 ## Controls
 - **Mouse Wheel + Ctrl**: Zoom in/out.
+- **Mouse Wheel + Shift**: Pan horizontally.
 - **Left/Right Arrow**: Previous/Next image in the folder.
 - **`F`**: Toggle Fullscreen.
+- **Ctrl+O / Ctrl+S**: Open / Save As.
 - **Drag & Drop**: Drop any file to view.
+- **File → Open File Location**: Reveal the current image in File Explorer.
+- **Metadata panel**: Close it with the **✕** in its header, or toggle it from **View → Image Metadata**.
 
 ## Releases
 You can download the latest pre-built binaries from the [Releases](https://github.com/fezcode/Atelier/releases) page.
