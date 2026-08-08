@@ -13,3 +13,5 @@
 
 Publish/
 Atelier_Installer_*
+dist/
+*.stackdump

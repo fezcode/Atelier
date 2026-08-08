@@ -36,3 +36,18 @@ You can download the latest pre-built binaries from the [Releases](https://githu
    ```bash
    dotnet run
    ```
+
+3. **Run the tests** (headless Avalonia — no window is shown):
+   ```bash
+   dotnet test Tests/Atelier.ZoomTests
+   ```
+
+## Packaging
+The Windows installer is built with [Forge](https://github.com/fezcode/Forge) from `forge.toml`:
+
+```powershell
+.\build-installer.ps1     # publish + bundle -> dist\Atelier-Setup-<version>.exe
+```
+
+The version lives in `<Version>` in `Atelier.csproj` — the About dialog reads it back off
+the assembly, so keep `[app] version` in `forge.toml` in step with it.

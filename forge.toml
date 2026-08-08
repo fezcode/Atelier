@@ -1,0 +1,112 @@
+# Atelier installer -- built with Forge (https://github.com/fezcode/Forge)
+#
+#   .\build-installer.ps1          publish + build dist/Atelier-Setup-<version>.exe
+#
+# Keep [app] version in step with <Version> in Atelier.csproj.
+
+[app]
+name    = "Atelier"
+version = "0.2.79"
+id      = "com.fezcode.atelier"
+icon    = "Assets/atelier-icon.ico"
+
+[meta]
+publisher   = "Fezcode"
+homepage    = "https://github.com/fezcode/Atelier"
+support_url = "https://github.com/fezcode/Atelier/issues"
+comments    = "A modern, high-performance image and SVG viewer built with Avalonia UI and Magick.NET."
+
+[ui]
+theme        = "atelier"
+window_title = "Atelier ${app.version} Setup"
+
+[install]
+# Per-user under LOCALAPPDATA so setup never needs UAC -- matching the HKCU-only
+# registration below. A ${PROGRAMFILES} path here would make the install
+# per-machine and prompt for elevation.
+default_dir = "${LOCALAPPDATA}/Programs/Atelier"
+
+[uninstall]
+keep = []
+
+# --- wizard -----------------------------------------------------------------
+
+[[steps]]
+type  = "welcome"
+title = "Atelier ${app.version}"
+body  = "This will install Atelier ${app.version} on your computer.\n\nAtelier is a fast, minimal viewer for raster images, SVG and HEIC/AVIF photos.\n\nClick Next to continue."
+
+[[steps]]
+type           = "license"
+title          = "License Agreement"
+file           = "LICENSE.txt"
+require_scroll = true
+
+[[steps]]
+type = "folder"
+
+[[steps]]
+type = "shortcuts"
+
+[[steps]]
+type = "install"
+
+[[steps]]
+type = "finish"
+body = "Atelier has been installed successfully.\n\nYou can set which file types open with Atelier from File -> File Associations."
+
+[[steps.launches]]
+kind    = "app"
+target  = "${INSTALLDIR}/Atelier.exe"
+label   = "Launch Atelier"
+checked = true
+
+# --- payload ----------------------------------------------------------------
+
+# The whole self-contained publish output. Produced by publish.ps1 -- deliberately
+# NOT single-file, so the runtime has nothing to unpack into %TEMP% on first launch.
+[[dirs]]
+src = "Publish"
+dst = "${INSTALLDIR}"
+
+[[files]]
+src = "LICENSE.txt"
+dst = "${INSTALLDIR}/LICENSE.txt"
+
+[[files]]
+src = "README.md"
+dst = "${INSTALLDIR}/README.md"
+
+# --- shortcuts --------------------------------------------------------------
+
+[[shortcuts]]
+target   = "${INSTALLDIR}/Atelier.exe"
+location = "${DESKTOP}"
+name     = "Atelier"
+icon     = "${INSTALLDIR}/Atelier.exe"
+label    = "Create a desktop shortcut"
+optional = true
+default  = true
+
+[[shortcuts]]
+target   = "${INSTALLDIR}/Atelier.exe"
+location = "${STARTMENU}/Fezcode"
+name     = "Atelier"
+icon     = "${INSTALLDIR}/Atelier.exe"
+label    = "Create a Start Menu entry"
+optional = true
+default  = true
+
+# --- registry ---------------------------------------------------------------
+
+[[registry]]
+hive  = "HKCU"
+key   = "Software\\Fezcode\\Atelier"
+value = "InstallDir"
+data  = "${INSTALLDIR}"
+
+[[registry]]
+hive  = "HKCU"
+key   = "Software\\Fezcode\\Atelier"
+value = "Version"
+data  = "${app.version}"
