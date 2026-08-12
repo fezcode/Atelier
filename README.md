@@ -21,6 +21,7 @@
 - **Ctrl+O / Ctrl+S**: Open / Save As.
 - **Drag & Drop**: Drop any file to view.
 - **File → Open File Location**: Reveal the current image in File Explorer.
+- **File → Set as Wallpaper**: Fill, Fit, Stretch, Center, Tile or Span. SVG, HEIC, AVIF, WebP and ICO are converted automatically, since Windows only accepts JPG, PNG and BMP.
 - **Metadata panel**: Close it with the **✕** in its header, or toggle it from **View → Image Metadata**.
 
 ## Releases

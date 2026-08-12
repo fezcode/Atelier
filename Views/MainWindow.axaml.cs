@@ -220,6 +220,65 @@ namespace Atelier.Views
         }
 
         /// <summary>
+        /// File &gt; Set as Wallpaper. The fit comes from the clicked item's Tag, so all
+        /// six modes share one handler instead of six near-identical copies.
+        /// </summary>
+        public async void SetWallpaper_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            if (sender is not MenuItem item || item.Tag is not string tag) return;
+            if (!Enum.TryParse<WallpaperHelper.WallpaperFit>(tag, out var fit)) return;
+            if (string.IsNullOrEmpty(vm.ImagePath)) return;
+
+            var path = vm.ImagePath;
+
+            // Rasterising an SVG at the wrong size looks soft once Windows scales it,
+            // so aim at the display this window is on.
+            var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+            int width = screen?.Bounds.Width ?? 0;
+            int height = screen?.Bounds.Height ?? 0;
+
+            try
+            {
+                // Converting a HEIC or a large SVG takes long enough to stutter the
+                // window, so it runs off the UI thread.
+                var prepared = await System.Threading.Tasks.Task.Run(
+                    () => WallpaperHelper.PrepareImage(path, width, height));
+
+                WallpaperHelper.Apply(prepared, fit);
+
+                vm.ErrorMessage = null;
+                ShowStatus($"Wallpaper set ({fit})");
+            }
+            catch (Exception ex)
+            {
+                vm.ErrorMessage = $"Could not set wallpaper: {ex.Message}";
+            }
+        }
+
+        private DispatcherTimer? _statusTimer;
+
+        /// <summary>Shows a transient line in the bottom bar and clears it a few seconds later.</summary>
+        private void ShowStatus(string message)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            vm.StatusMessage = message;
+
+            _statusTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            // Restart rather than stack: an earlier message's tick must not clear a newer one.
+            _statusTimer.Stop();
+            _statusTimer.Tick -= ClearStatus;
+            _statusTimer.Tick += ClearStatus;
+            _statusTimer.Start();
+        }
+
+        private void ClearStatus(object? sender, EventArgs e)
+        {
+            _statusTimer?.Stop();
+            if (DataContext is MainWindowViewModel vm) vm.StatusMessage = null;
+        }
+
+        /// <summary>
         /// The metadata pane's close button. Mirrors View &gt; Image Metadata, which
         /// stays checkable so the pane can be brought back.
         /// </summary>

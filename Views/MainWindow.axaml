@@ -37,6 +37,15 @@
                         <Separator/>
                         <MenuItem Header="Open File _Location" Click="OpenFileLocation_Click"
                                   IsEnabled="{Binding HasImage}"/>
+                        <MenuItem Header="Set as _Wallpaper" IsEnabled="{Binding CanSetWallpaper}">
+                            <MenuItem Header="_Fill" Tag="Fill" Click="SetWallpaper_Click"/>
+                            <MenuItem Header="Fi_t" Tag="Fit" Click="SetWallpaper_Click"/>
+                            <MenuItem Header="_Stretch" Tag="Stretch" Click="SetWallpaper_Click"/>
+                            <MenuItem Header="_Center" Tag="Center" Click="SetWallpaper_Click"/>
+                            <MenuItem Header="_Tile" Tag="Tile" Click="SetWallpaper_Click"/>
+                            <MenuItem Header="Sp_an" Tag="Span" Click="SetWallpaper_Click"
+                                      ToolTip.Tip="One image across all monitors"/>
+                        </MenuItem>
                         <Separator/>
                         <MenuItem Header="File _Associations..." Click="FileAssociations_Click"/>
                         <Separator/>
@@ -253,9 +262,13 @@
                     </Grid>
 
                     <Border Background="#111111" CornerRadius="8" Padding="15,8" BorderBrush="#222222" BorderThickness="1">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
                             <TextBlock Text="{Binding ImagePath}" Foreground="#CCCCCC" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="10,0,0,0">
+                            <TextBlock Grid.Column="1" Name="StatusText" Text="{Binding StatusMessage}"
+                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Foreground="#6FD08C" FontSize="11" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" Margin="10,0,0,0">
                                 <TextBlock Text="{Binding ImageWidth, StringFormat='\{0\}'}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <TextBlock Text="×" Foreground="#AAAAAA" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding ImageHeight, StringFormat='\{0\}'}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>

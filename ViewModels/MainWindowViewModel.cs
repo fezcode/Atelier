@@ -36,11 +36,26 @@ namespace Atelier.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _imagePath, value);
                 this.RaisePropertyChanged(nameof(HasImage));
+                this.RaisePropertyChanged(nameof(CanSetWallpaper));
             }
         }
 
         /// <summary>Greys out the menu items that act on the file on disk.</summary>
         public bool HasImage => !string.IsNullOrEmpty(ImagePath);
+
+        /// <summary>
+        /// Set as Wallpaper reads the file on disk, so it is unavailable while editing --
+        /// otherwise it would quietly ignore the adjustments on screen.
+        /// </summary>
+        public bool CanSetWallpaper => HasImage && IsViewMode;
+
+        private string? _statusMessage;
+        /// <summary>Transient confirmation shown in the bottom bar; cleared on a timer.</summary>
+        public string? StatusMessage
+        {
+            get => _statusMessage;
+            set => this.RaiseAndSetIfChanged(ref _statusMessage, value);
+        }
 
         private string? _errorMessage;
         public string? ErrorMessage
@@ -343,6 +358,10 @@ namespace Atelier.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _isEditMode, value);
                 this.RaisePropertyChanged(nameof(IsViewMode));
+                // Without this, closing the metadata pane and then entering Edit Mode
+                // left the editor invisible: IsRightPaneVisible flipped but never notified.
+                this.RaisePropertyChanged(nameof(IsRightPaneVisible));
+                this.RaisePropertyChanged(nameof(CanSetWallpaper));
             }
         }
 
