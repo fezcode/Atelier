@@ -54,6 +54,14 @@ public static class FileAssociationHelper
                 using (var progIdKey = classesRoot.CreateSubKey(progId))
                 {
                     progIdKey.SetValue("", $"{AppName} - {description}");
+
+                    // Explorer draws this icon as a small badge in the bottom-right
+                    // corner of the file's thumbnail (the same mechanism behind VLC's
+                    // cone on video thumbnails). It only kicks in once this ProgID is
+                    // the extension's default handler, and only where Explorer can
+                    // render a thumbnail at all.
+                    progIdKey.SetValue("TypeOverlay", $"\"{exePath}\",0");
+
                     using var iconKey = progIdKey.CreateSubKey("DefaultIcon");
                     iconKey.SetValue("", $"\"{exePath}\",0");
 
