@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <!-- Single source of truth for the version: the About dialog reads it back off the
          assembly, and forge.toml must be kept in step with it. -->
-    <Version>0.2.82</Version>
+    <Version>0.2.83</Version>
     <Company>Fezcode</Company>
     <Product>Atelier</Product>
     <Nullable>enable</Nullable>

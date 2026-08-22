@@ -79,6 +79,7 @@ namespace Atelier.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _showControls, value);
                 this.RaisePropertyChanged(nameof(ChevronData));
+                this.RaisePropertyChanged(nameof(ShowTopBar));
                 this.RaisePropertyChanged(nameof(IsRightPaneVisible));
             }
         }
@@ -94,7 +95,50 @@ namespace Atelier.ViewModels
             }
         }
 
-        public bool IsRightPaneVisible => ShowControls && (IsEditMode || ShowMetadata);
+        private bool _isFullScreen;
+        /// <summary>Fullscreen shows nothing but the image, so every piece of chrome keys off this.</summary>
+        public bool IsFullScreen
+        {
+            get => _isFullScreen;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _isFullScreen, value);
+                RaiseChromeChanged();
+            }
+        }
+
+        private bool _isFrameMode;
+        /// <summary>Picture frame mode: only the image in a plain window with the system caption buttons.</summary>
+        public bool IsFrameMode
+        {
+            get => _isFrameMode;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _isFrameMode, value);
+                RaiseChromeChanged();
+            }
+        }
+
+        private void RaiseChromeChanged()
+        {
+            this.RaisePropertyChanged(nameof(IsChromeVisible));
+            this.RaisePropertyChanged(nameof(ShowTopBar));
+            this.RaisePropertyChanged(nameof(IsRightPaneVisible));
+            this.RaisePropertyChanged(nameof(ShowExitFrameButton));
+        }
+
+        /// <summary>False in fullscreen and picture frame mode, which both strip the window down to the image.</summary>
+        public bool IsChromeVisible => !IsFullScreen && !IsFrameMode;
+
+        public bool ShowTopBar => ShowControls && IsChromeVisible;
+
+        /// <summary>
+        /// Hidden while fullscreen is layered on top of frame mode: Esc/F unwind
+        /// fullscreen first, so the button would mislead there.
+        /// </summary>
+        public bool ShowExitFrameButton => IsFrameMode && !IsFullScreen;
+
+        public bool IsRightPaneVisible => ShowControls && IsChromeVisible && (IsEditMode || ShowMetadata);
 
         public string ChevronData => ShowControls ? "M 0 0 L 5 5 L 10 0" : "M 0 5 L 5 0 L 10 5";
 

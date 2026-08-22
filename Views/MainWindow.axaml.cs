@@ -732,13 +732,45 @@ namespace Atelier.Views
             }
         }
 
+        private WindowState _stateBeforeFullScreen = WindowState.Normal;
+
         private void ToggleFullScreen()
         {
-            WindowState = WindowState == WindowState.FullScreen 
-                ? WindowState.Normal 
-                : WindowState.FullScreen;
-            
+            if (WindowState == WindowState.FullScreen)
+            {
+                WindowState = _stateBeforeFullScreen;
+                if (DataContext is MainWindowViewModel vm) vm.IsFullScreen = false;
+            }
+            else
+            {
+                _stateBeforeFullScreen = WindowState;
+                WindowState = WindowState.FullScreen;
+                // The window state alone leaves the menu, panes and bottom bar on
+                // screen; the view model flag is what strips fullscreen to the image.
+                if (DataContext is MainWindowViewModel vm) vm.IsFullScreen = true;
+            }
+
             // Refit after fullscreen toggle
+            Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
+
+        public void FrameMode_Click(object? sender, RoutedEventArgs e) => SetFrameMode(true);
+
+        public void ExitFrame_Click(object? sender, RoutedEventArgs e) => SetFrameMode(false);
+
+        private void SetFrameMode(bool on)
+        {
+            if (DataContext is not MainWindowViewModel vm || vm.IsFrameMode == on) return;
+
+            // Frame mode is a windowed look; entering it straight from fullscreen would
+            // leave a chromeless fullscreen window with no caption buttons to close it.
+            if (on && WindowState == WindowState.FullScreen)
+            {
+                WindowState = _stateBeforeFullScreen;
+                vm.IsFullScreen = false;
+            }
+
+            vm.IsFrameMode = on;
             Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
         }
 
@@ -761,6 +793,21 @@ namespace Atelier.Views
                 else if (e.Key == Key.F)
                 {
                     ToggleFullScreen();
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape)
+                {
+                    // Unwind one layer at a time: fullscreen first, then frame mode.
+                    if (WindowState == WindowState.FullScreen)
+                    {
+                        ToggleFullScreen();
+                        e.Handled = true;
+                    }
+                    else if (vm.IsFrameMode)
+                    {
+                        SetFrameMode(false);
+                        e.Handled = true;
+                    }
                 }
                 else if (e.Key == Key.O && e.KeyModifiers.HasFlag(KeyModifiers.Control))
                 {
