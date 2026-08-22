@@ -1,10 +1,13 @@
 using Atelier.ViewModels;
 using Atelier.Views;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Xunit;
 
@@ -33,6 +36,23 @@ public class FullScreenAndFrameTests
         Dispatcher.UIThread.RunJobs();
         win.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
+    /// Loads an image bigger than the viewport so the ScrollViewer has room to pan
+    /// and the zoom level is meaningful.
+    /// </summary>
+    private static (MainWindow win, MainWindowViewModel vm, ScrollViewer scroll) ShowWithImage()
+    {
+        var (win, vm) = Show();
+        vm.ImageSource = new WriteableBitmap(
+            new PixelSize(1600, 1200), new Vector(96, 96),
+            PixelFormat.Bgra8888, AlphaFormat.Premul);
+        vm.ImageWidth = 1600;
+        vm.ImageHeight = 1200;
+        vm.ZoomLevel = 1.0;
+        Pump(win);
+        return (win, vm, win.FindControl<ScrollViewer>("MainScroll")!);
     }
 
     private static void AssertChromeHidden(MainWindow win)
@@ -162,6 +182,102 @@ public class FullScreenAndFrameTests
 
         Assert.False(vm.IsFrameMode);
         AssertChromeVisible(win);
+    }
+
+    [AvaloniaFact]
+    public void FrameMode_KeepsTheWindowAlwaysOnTop()
+    {
+        var (win, vm) = Show();
+        Assert.False(win.Topmost);
+
+        win.FrameMode_Click(null, new RoutedEventArgs());
+        Pump(win);
+        Assert.True(win.Topmost, "a picture frame must stay above other windows");
+
+        win.ExitFrame_Click(null, new RoutedEventArgs());
+        Pump(win);
+        Assert.False(win.Topmost, "leaving frame mode must drop always-on-top");
+    }
+
+    /// <summary>
+    /// The view hides the exit button on a 5s timer by clearing this flag; the flag
+    /// must actually hide the button, and re-entering frame mode must reset it.
+    /// </summary>
+    [AvaloniaFact]
+    public void ExitFrameHint_HidesTheButton_AndResetsOnReentry()
+    {
+        var (win, vm) = Show();
+        win.FrameMode_Click(null, new RoutedEventArgs());
+        Pump(win);
+
+        var exit = win.FindControl<Button>("ExitFrameButton")!;
+        Assert.True(exit.IsVisible);
+
+        vm.ExitFrameHintVisible = false;   // what the auto-hide timer does
+        Pump(win);
+        Assert.False(exit.IsVisible, "clearing the hint must hide the button");
+        Assert.True(vm.IsFrameMode, "hiding the hint must not leave frame mode");
+
+        win.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Pump(win);
+        Assert.False(vm.IsFrameMode, "Esc must still exit with the button hidden");
+
+        win.FrameMode_Click(null, new RoutedEventArgs());
+        Pump(win);
+        Assert.True(exit.IsVisible, "re-entering frame mode must show the hint again");
+    }
+
+    [AvaloniaFact]
+    public void BareWheel_Zooms_OnlyInFrameMode()
+    {
+        var (win, vm, scroll) = ShowWithImage();
+        var centre = new Point(win.Width / 2, win.Height / 2);
+
+        win.MouseWheel(centre, new Vector(0, 1));
+        Pump(win);
+        Assert.Equal(1.0, vm.ZoomLevel, 3);   // inert outside frame mode
+
+        win.FrameMode_Click(null, new RoutedEventArgs());
+        Pump(win);
+        vm.ZoomLevel = 1.0;
+        Pump(win);
+
+        win.MouseWheel(centre, new Vector(0, 1));
+        Pump(win);
+        Assert.True(vm.ZoomLevel > 1.0, "wheel up must zoom in while framed");
+
+        var zoomedIn = vm.ZoomLevel;
+        win.MouseWheel(centre, new Vector(0, -1));
+        Pump(win);
+        Assert.True(vm.ZoomLevel < zoomedIn, "wheel down must zoom back out");
+    }
+
+    /// <summary>
+    /// Left-drag pans the image everywhere except the top strip, which stands in for
+    /// the hidden title bar and moves the window instead (a no-op headless, so the
+    /// assertion is that the image did NOT pan).
+    /// </summary>
+    [AvaloniaFact]
+    public void FrameMode_TopStripMovesTheWindow_LowerAreaPansTheImage()
+    {
+        var (win, vm, scroll) = ShowWithImage();
+        win.FrameMode_Click(null, new RoutedEventArgs());
+        Pump(win);
+        vm.ZoomLevel = 1.0;   // frame-mode FitToView shrank it; restore pannable extent
+        Pump(win);
+
+        var before = scroll.Offset;
+        win.MouseDown(new Point(450, 20), MouseButton.Left);
+        win.MouseMove(new Point(400, 60));
+        win.MouseUp(new Point(400, 60), MouseButton.Left);
+        Pump(win);
+        Assert.Equal(before, scroll.Offset);
+
+        win.MouseDown(new Point(450, 300), MouseButton.Left);
+        win.MouseMove(new Point(400, 250));
+        win.MouseUp(new Point(400, 250), MouseButton.Left);
+        Pump(win);
+        Assert.NotEqual(before, scroll.Offset);
     }
 
     /// <summary>

@@ -30,6 +30,12 @@ namespace Atelier.Views
         private const double MaxZoom = 64.0;
         private const double ShiftPanStep = 50.0;
 
+        /// <summary>
+        /// In frame mode the hidden title bar's job moves to this strip along the top
+        /// of the window: dragging there moves the window, everywhere else pans.
+        /// </summary>
+        private const double FrameDragStripHeight = 40.0;
+
         /// <summary>Read off the assembly so it tracks &lt;Version&gt; in Atelier.csproj.</summary>
         private static readonly string AppVersion =
             typeof(MainWindow).Assembly
@@ -582,7 +588,8 @@ namespace Atelier.Views
 
         /// <summary>
         /// Tunnel-phase wheel handler for the image viewer. Ctrl+wheel zooms about the cursor,
-        /// Shift+wheel pans horizontally, and a bare wheel is deliberately inert.
+        /// Shift+wheel pans horizontally, and a bare wheel is deliberately inert — except in
+        /// frame mode, where it zooms.
         /// </summary>
         private void OnViewerWheel(object? sender, PointerWheelEventArgs e)
         {
@@ -591,7 +598,11 @@ namespace Atelier.Views
             var scroll = this.FindControl<ScrollViewer>("MainScroll");
             if (scroll == null) return;
 
-            if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            // Frame mode has no visible zoom controls, so a bare wheel zooms there.
+            bool zoomGesture = e.KeyModifiers.HasFlag(KeyModifiers.Control)
+                || (vm.IsFrameMode && e.KeyModifiers == KeyModifiers.None);
+
+            if (zoomGesture)
             {
                 if (scroll.Presenter != null)
                     ZoomAnchored(scroll, e.Delta.Y > 0 ? ZoomStep : 1 / ZoomStep,
@@ -739,7 +750,17 @@ namespace Atelier.Views
             if (WindowState == WindowState.FullScreen)
             {
                 WindowState = _stateBeforeFullScreen;
-                if (DataContext is MainWindowViewModel vm) vm.IsFullScreen = false;
+                if (DataContext is MainWindowViewModel vm)
+                {
+                    vm.IsFullScreen = false;
+                    // Landing back in frame mode: give the exit hint another few
+                    // seconds on screen so the user is not stranded.
+                    if (vm.IsFrameMode)
+                    {
+                        vm.ExitFrameHintVisible = true;
+                        RestartExitFrameTimer();
+                    }
+                }
             }
             else
             {
@@ -771,7 +792,31 @@ namespace Atelier.Views
             }
 
             vm.IsFrameMode = on;
+            // A picture frame hangs in front of everything else.
+            Topmost = on;
+
+            if (on) RestartExitFrameTimer();
+            else _exitFrameTimer?.Stop();
+
             Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
+
+        private DispatcherTimer? _exitFrameTimer;
+
+        /// <summary>Arms the auto-hide on the EXIT FRAME overlay; hovering the top strip re-arms it.</summary>
+        private void RestartExitFrameTimer()
+        {
+            _exitFrameTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            _exitFrameTimer.Tick -= HideExitFrameHint;
+            _exitFrameTimer.Tick += HideExitFrameHint;
+            _exitFrameTimer.Stop();
+            _exitFrameTimer.Start();
+        }
+
+        private void HideExitFrameHint(object? sender, EventArgs e)
+        {
+            _exitFrameTimer?.Stop();
+            if (DataContext is MainWindowViewModel vm) vm.ExitFrameHintVisible = false;
         }
 
         protected override async void OnKeyDown(KeyEventArgs e)
@@ -825,6 +870,14 @@ namespace Atelier.Views
         {
             if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             {
+                if (DataContext is MainWindowViewModel vm && vm.IsFrameMode
+                    && WindowState != WindowState.FullScreen
+                    && e.GetPosition(this).Y <= FrameDragStripHeight)
+                {
+                    BeginMoveDrag(e);
+                    return;
+                }
+
                 _isPanning = true;
                 _lastMousePos = e.GetPosition(this);
                 Cursor = new Cursor(StandardCursorType.Hand);
@@ -846,6 +899,16 @@ namespace Atelier.Views
                     scroll.Offset = new Vector(scroll.Offset.X + delta.X, scroll.Offset.Y + delta.Y);
                 }
                 e.Handled = true;
+                return;
+            }
+
+            // Hovering the top strip brings the auto-hidden EXIT FRAME button back
+            // and keeps it alive while the pointer stays there.
+            if (DataContext is MainWindowViewModel vm && vm.IsFrameMode && !vm.IsFullScreen
+                && e.GetPosition(this).Y <= FrameDragStripHeight)
+            {
+                vm.ExitFrameHintVisible = true;
+                RestartExitFrameTimer();
             }
         }
 

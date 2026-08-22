@@ -115,7 +115,24 @@ namespace Atelier.ViewModels
             set
             {
                 this.RaiseAndSetIfChanged(ref _isFrameMode, value);
+                // A fresh entry always shows the exit hint; the view hides it on a timer.
+                if (value) ExitFrameHintVisible = true;
                 RaiseChromeChanged();
+            }
+        }
+
+        private bool _exitFrameHintVisible = true;
+        /// <summary>
+        /// The EXIT FRAME overlay auto-hides a few seconds into frame mode; hovering
+        /// the top strip brings it back. The timer lives in the view.
+        /// </summary>
+        public bool ExitFrameHintVisible
+        {
+            get => _exitFrameHintVisible;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _exitFrameHintVisible, value);
+                this.RaisePropertyChanged(nameof(ShowExitFrameButton));
             }
         }
 
@@ -136,7 +153,7 @@ namespace Atelier.ViewModels
         /// Hidden while fullscreen is layered on top of frame mode: Esc/F unwind
         /// fullscreen first, so the button would mislead there.
         /// </summary>
-        public bool ShowExitFrameButton => IsFrameMode && !IsFullScreen;
+        public bool ShowExitFrameButton => IsFrameMode && !IsFullScreen && ExitFrameHintVisible;
 
         public bool IsRightPaneVisible => ShowControls && IsChromeVisible && (IsEditMode || ShowMetadata);
 
