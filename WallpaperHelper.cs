@@ -47,12 +47,14 @@ public static class WallpaperHelper
     public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
     /// <summary>
-    /// Where converted wallpapers are kept. Not %TEMP%: Windows re-reads this path
-    /// when the desktop refreshes, and a cleaner deleting it would break the background.
+    /// Where converted wallpapers are kept: %APPDATA%\fezcode\Atelier\Wallpaper, the
+    /// same Fezcode-owned tree the rest of the suite stores its per-user data in.
+    /// Not %TEMP%: Windows re-reads this path when the desktop refreshes, and a
+    /// cleaner deleting it would break the background.
     /// </summary>
     public static string CacheDirectory => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Atelier", "Wallpaper");
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "fezcode", "Atelier", "Wallpaper");
 
     /// <summary>
     /// Maps a fit onto the two HKCU\Control Panel\Desktop values the shell reads.
