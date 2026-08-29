@@ -12,6 +12,7 @@
 - **Fluid Navigation**: Seamless directory browsing and centered zooming.
 - **Drag & Drop**: Open any supported file or folder instantly.
 - **Minimalist Design**: Clean, dark-themed interface focused on your content.
+- **Hisashi menubar**: opt in under **View → Hisashi** and File / View / Edit / Help move into [Hisashi](https://github.com/fezcode/hisashi)'s macOS-style menu bar while it is running; the in-app strip hides itself. Speaks the tiny [hoswl](https://github.com/fezcode/hisashi/blob/main/docs/hoswl-protocol.md) named-pipe protocol — no dependency on Hisashi.
 
 ## Controls
 - **Mouse Wheel + Ctrl**: Zoom in/out.
@@ -23,6 +24,7 @@
 - **File → Open File Location**: Reveal the current image in File Explorer.
 - **File → Set as Wallpaper**: Fill, Fit, Stretch, Center, Tile or Span. SVG, HEIC, AVIF, WebP and ICO are converted automatically, since Windows only accepts JPG, PNG and BMP.
 - **Metadata panel**: Close it with the **✕** in its header, or toggle it from **View → Image Metadata**.
+- **View → Hisashi → Connect to Hisashi / Show Menus in Hisashi**: publish the menus to Hisashi's menubar (both remembered in `%APPDATA%\fezcode\Atelier\settings.json`).
 
 ## Releases
 You can download the latest pre-built binaries from the [Releases](https://github.com/fezcode/Atelier/releases) page.

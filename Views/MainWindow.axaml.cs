@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Atelier.Hoswl;
 using Atelier.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -101,6 +103,66 @@ namespace Atelier.Views
                     };
                 }
             };
+
+            InitHisashi();
+        }
+
+        // ---- Hisashi OS Window Layer (hoswl) ---------------------------------------
+
+        private HisashiMenubar? _hisashi;
+        private UserSettings _userSettings = new();
+
+        /// <summary>Exposed for tests: the live integration object, if the window created one.</summary>
+        public HisashiMenubar? Hisashi => _hisashi;
+
+        /// <summary>
+        /// Wires View → Hisashi: the two checkable items persist to settings.json, and
+        /// the integration object is (re)created whenever the view model arrives so it
+        /// can watch the properties the menu reflects (enabled rows, checkmarks).
+        /// </summary>
+        private void InitHisashi()
+        {
+            _userSettings = UserSettings.Load();
+            var menu = this.FindControl<Menu>("MainMenu");
+            var connect = this.FindControl<MenuItem>("HisashiConnectItem");
+            var show = this.FindControl<MenuItem>("HisashiMenusItem");
+            if (menu == null || connect == null || show == null) return;
+
+            connect.IsChecked = _userSettings.HisashiIntegration;
+            show.IsChecked = _userSettings.HisashiMenus;
+            connect.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == MenuItem.IsCheckedProperty) _hisashi?.SetIntegration(connect.IsChecked);
+            };
+            show.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == MenuItem.IsCheckedProperty) _hisashi?.SetShowMenus(show.IsChecked);
+            };
+
+            void Create()
+            {
+                _hisashi?.Dispose();
+                _hisashi = new HisashiMenubar(menu, DataContext as INotifyPropertyChanged, _userSettings, AppVersion);
+                _hisashi.StateChanged += ApplyHisashiChrome;
+                _hisashi.Apply();
+            }
+
+            if (DataContext != null) Create();
+            DataContextChanged += (_, _) => Create();
+            Closed += (_, _) => { _hisashi?.Dispose(); _hisashi = null; };
+        }
+
+        /// <summary>
+        /// While Hisashi is showing our menus the in-app strip gets out of the way: the
+        /// menu row hides and the top bar shrinks to just the drag strip.
+        /// </summary>
+        private void ApplyHisashiChrome()
+        {
+            var external = _hisashi?.MenusExternal == true;
+            var menu = this.FindControl<Menu>("MainMenu");
+            var topBar = this.FindControl<Border>("TopBar");
+            if (menu != null) menu.IsVisible = !external;
+            if (topBar != null) topBar.Height = external ? 40 : 80;
         }
 
         /// <summary>Loads an image and fits it to the viewer once layout has caught up.</summary>

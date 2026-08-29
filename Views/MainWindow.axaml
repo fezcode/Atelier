@@ -30,7 +30,7 @@
                 </Panel>
                 
                 <!-- Menu Area (Bottom half, explicitly interactive) -->
-                <Menu Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="15,0,0,0" Background="Transparent" ClipToBounds="False">
+                <Menu Grid.Row="1" Name="MainMenu" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="15,0,0,0" Background="Transparent" ClipToBounds="False">
                     <MenuItem Header="_File">
                         <MenuItem Header="_Open..." Click="OpenFileName_Click" InputGesture="Ctrl+O"/>
                         <MenuItem Header="_Save As..." Click="SaveAs_Click" InputGesture="Ctrl+S"/>
@@ -57,6 +57,15 @@
                         <MenuItem Header="_Fit to Screen" Click="FitToScreen_Click"/>
                         <Separator/>
                         <MenuItem Header="Image _Metadata" IsChecked="{Binding ShowMetadata, Mode=TwoWay}" ToggleType="CheckBox"/>
+                        <Separator/>
+                        <!-- Hisashi OS Window Layer: publish these menus to Hisashi's menubar.
+                             State is persisted by MainWindow, which watches IsChecked. -->
+                        <MenuItem Header="_Hisashi">
+                            <MenuItem Header="_Connect to Hisashi" Name="HisashiConnectItem" ToggleType="CheckBox"
+                                      ToolTip.Tip="Talk to Hisashi's OS Window Layer when it is running"/>
+                            <MenuItem Header="Show _Menus in Hisashi" Name="HisashiMenusItem" ToggleType="CheckBox"
+                                      ToolTip.Tip="Move File / View / Edit / Help into Hisashi's menubar while connected"/>
+                        </MenuItem>
                     </MenuItem>
                     <MenuItem Header="_Edit">
                         <MenuItem Header="_Edit Image" Click="EditImage_Click" IsEnabled="{Binding IsViewMode}"/>

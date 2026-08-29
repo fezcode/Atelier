@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <!-- Single source of truth for the version: the About dialog reads it back off the
          assembly, and forge.toml must be kept in step with it. -->
-    <Version>0.2.86</Version>
+    <Version>0.3.0</Version>
     <Company>Fezcode</Company>
     <Product>Atelier</Product>
     <Nullable>enable</Nullable>
@@ -27,6 +27,10 @@
   <ItemGroup>
     <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Atelier.ZoomTests" />
   </ItemGroup>
 
   <!-- The test project lives under Tests\ inside this folder, so the SDK's default
