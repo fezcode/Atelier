@@ -12,7 +12,7 @@ Write-Host "Publishing Atelier..." -ForegroundColor Cyan
 # NOT single-file: PublishSingleFile bundles ~37 MB of native libraries that the
 # runtime must unpack into %TEMP% before the first launch, which cost ~4s on a cold
 # start. The installer ships a folder, so there is nothing to gain from bundling.
-dotnet publish -c Release -r win-x64 --self-contained true `
+dotnet publish (Join-Path $PSScriptRoot "Atelier.csproj") -c Release -r win-x64 --self-contained true `
     -p:PublishSingleFile=false `
     -p:PublishReadyToRun=true `
     -p:PublishTrimmed=false `
