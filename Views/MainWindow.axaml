@@ -69,6 +69,9 @@
                     </MenuItem>
                     <MenuItem Header="_Edit">
                         <MenuItem Header="_Edit Image" Click="EditImage_Click" IsEnabled="{Binding IsViewMode}"/>
+                        <Separator/>
+                        <MenuItem Header="Open with _Paint" Click="OpenInPaint_Click" IsEnabled="{Binding CanOpenInPaint}"
+                                  ToolTip.Tip="Hand the file on disk to Microsoft Paint (BMP, JPEG, PNG, GIF, TIFF, ICO, WebP)"/>
                     </MenuItem>
                     <MenuItem Header="_Help">
                         <MenuItem Header="_About" Click="About_Click"/>

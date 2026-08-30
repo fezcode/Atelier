@@ -37,6 +37,7 @@ namespace Atelier.ViewModels
                 this.RaiseAndSetIfChanged(ref _imagePath, value);
                 this.RaisePropertyChanged(nameof(HasImage));
                 this.RaisePropertyChanged(nameof(CanSetWallpaper));
+                this.RaisePropertyChanged(nameof(CanOpenInPaint));
             }
         }
 
@@ -48,6 +49,22 @@ namespace Atelier.ViewModels
         /// otherwise it would quietly ignore the adjustments on screen.
         /// </summary>
         public bool CanSetWallpaper => HasImage && IsViewMode;
+
+        /// <summary>
+        /// What Microsoft Paint will actually open. Deliberately narrower than the
+        /// formats Atelier can display: Paint has no SVG support at all, and HEIC/HEIF
+        /// only decode when the optional Store extension is installed, so offering
+        /// either would hand the user a Paint window with an error in it.
+        /// </summary>
+        private static readonly HashSet<string> PaintExtensions = new(StringComparer.OrdinalIgnoreCase)
+            { ".bmp", ".dib", ".jpg", ".jpeg", ".jpe", ".jfif", ".gif", ".png", ".tif", ".tiff", ".ico", ".webp" };
+
+        /// <summary>
+        /// Paint reads the file on disk, so -- like Set as Wallpaper -- it is unavailable
+        /// while editing, where it would silently miss the adjustments on screen.
+        /// </summary>
+        public bool CanOpenInPaint =>
+            HasImage && IsViewMode && PaintExtensions.Contains(Path.GetExtension(ImagePath!));
 
         private string? _statusMessage;
         /// <summary>Transient confirmation shown in the bottom bar; cleared on a timer.</summary>
@@ -423,6 +440,7 @@ namespace Atelier.ViewModels
                 // left the editor invisible: IsRightPaneVisible flipped but never notified.
                 this.RaisePropertyChanged(nameof(IsRightPaneVisible));
                 this.RaisePropertyChanged(nameof(CanSetWallpaper));
+                this.RaisePropertyChanged(nameof(CanOpenInPaint));
             }
         }
 

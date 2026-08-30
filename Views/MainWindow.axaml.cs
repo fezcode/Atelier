@@ -90,6 +90,11 @@ namespace Atelier.Views
             {
                 if (DataContext is MainWindowViewModel vm)
                 {
+                    // The pane's own default is "open"; the saved choice wins over it.
+                    // InitHisashi has already run and loaded the file by this point --
+                    // DataContext is assigned after the constructor returns.
+                    vm.ShowMetadata = _userSettings.ShowMetadata;
+
                     vm.PropertyChanged += (sender, args) =>
                     {
                         if (args.PropertyName == nameof(MainWindowViewModel.IsRightPaneVisible))
@@ -99,6 +104,10 @@ namespace Atelier.Views
                         else if (args.PropertyName == nameof(MainWindowViewModel.IsEditMode))
                         {
                             UpdateRightPaneHeader();
+                        }
+                        else if (args.PropertyName == nameof(MainWindowViewModel.ShowMetadata))
+                        {
+                            PersistShowMetadata(vm.ShowMetadata);
                         }
                     };
                 }
@@ -114,6 +123,21 @@ namespace Atelier.Views
 
         /// <summary>Exposed for tests: the live integration object, if the window created one.</summary>
         public HisashiMenubar? Hisashi => _hisashi;
+
+        /// <summary>Exposed for tests: the settings this window loaded and writes back to.</summary>
+        public UserSettings Settings => _userSettings;
+
+        /// <summary>
+        /// Remembers the metadata pane's open/closed state across launches. Shares the
+        /// one UserSettings instance with the Hisashi integration, so a write here keeps
+        /// its two switches rather than rewriting the file from defaults.
+        /// </summary>
+        private void PersistShowMetadata(bool show)
+        {
+            if (_userSettings.ShowMetadata == show) return;
+            _userSettings.ShowMetadata = show;
+            _userSettings.Save();
+        }
 
         /// <summary>
         /// Wires View → Hisashi: the two checkable items persist to settings.json, and
@@ -726,6 +750,44 @@ namespace Atelier.Views
                 vm.EnterEditMode();
                 // Ensure controls are visible when editing
                 if (!vm.ShowControls) vm.ShowControls = true;
+            }
+        }
+
+        /// <summary>
+        /// Edit &gt; Open with Paint. Hands the file on disk to mspaint; the menu item is
+        /// only enabled for formats Paint can decode (see CanOpenInPaint), so anything
+        /// that reaches here is expected to open. Paint gets its own copy of the file --
+        /// nothing is written back to the viewer, so the user has to reload to see edits.
+        /// </summary>
+        public void OpenInPaint_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            if (!vm.CanOpenInPaint) return;
+
+            // Same normalisation as Open File Location: a forward slash in the path
+            // survives our own file handling but confuses the shell.
+            var path = System.IO.Path.GetFullPath(vm.ImagePath!);
+            if (!System.IO.File.Exists(path))
+            {
+                vm.ErrorMessage = $"File no longer exists: {path}";
+                return;
+            }
+
+            try
+            {
+                // UseShellExecute keeps the app execution alias working: on Windows 11
+                // mspaint.exe in System32 is a stub that launches the Store build.
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "mspaint.exe",
+                    Arguments = $"\"{path}\"",
+                    UseShellExecute = true
+                });
+                ShowStatus("Opened in Paint");
+            }
+            catch (Exception ex)
+            {
+                vm.ErrorMessage = $"Could not open Paint: {ex.Message}";
             }
         }
 

@@ -15,7 +15,18 @@ namespace Atelier.Hoswl
         [JsonPropertyName("hisashiIntegration")] public bool HisashiIntegration { get; set; } = false;
         [JsonPropertyName("hisashiMenus")]       public bool HisashiMenus       { get; set; } = true;
 
-        public static string DefaultPath => Path.Combine(
+        /// <summary>View &gt; Image Metadata. Closing the pane used to last only until the
+        /// next launch, so the same click was needed every session.</summary>
+        [JsonPropertyName("showMetadata")]       public bool ShowMetadata       { get; set; } = true;
+
+        /// <summary>
+        /// Redirects <see cref="DefaultPath"/> for the whole process. The test assembly
+        /// points it at a temp file: settings are now written on ordinary UI actions
+        /// (closing the metadata pane), so a test run must not reach the real file.
+        /// </summary>
+        public static string? PathOverride { get; set; }
+
+        public static string DefaultPath => PathOverride ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "fezcode", "Atelier", "settings.json");
 
