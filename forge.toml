@@ -29,7 +29,9 @@ window_title = "Atelier ${app.version} Setup"
 default_dir = "${PROGRAMFILES}/Atelier"
 
 [uninstall]
-keep = []
+keep          = []
+settings_dirs = ["${APPDATA}/fezcode/Atelier"]   # offered as "Also remove my settings and data"
+progids       = ["Atelier*"]                      # AtelierPNG, AtelierJPG, ... written by "Set as default viewer"
 
 # --- wizard -----------------------------------------------------------------
 
