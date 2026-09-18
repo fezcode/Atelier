@@ -2,6 +2,7 @@ using System.IO;
 using Atelier.Hoswl;
 using Atelier.ViewModels;
 using Atelier.Views;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Xunit;
@@ -19,6 +20,8 @@ public class MetadataPanePersistenceTests
         var vm = new MainWindowViewModel();
         var win = new MainWindow { DataContext = vm, Width = 900, Height = 600 };
         win.Show();
+        Dispatcher.UIThread.RunJobs();
+        win.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
         return (win, vm);
     }
@@ -78,6 +81,33 @@ public class MetadataPanePersistenceTests
         var (third, vm3) = Show();
         Assert.True(vm3.ShowMetadata);
         third.Close();
+    }
+
+    /// <summary>
+    /// Hiding the pane is not enough: its grid column has to give its width back. A
+    /// launch with the pane already closed used to leave the column at the 300px the
+    /// XAML declares, so the viewer opened with an empty dark strip down the right
+    /// edge that looked exactly like the pane it had just been told to hide.
+    /// </summary>
+    [AvaloniaFact]
+    public void StartingWithThePaneClosed_LeavesTheViewerTheWholeWidth()
+    {
+        var (first, vm) = Show();
+        vm.ShowMetadata = false;
+        Dispatcher.UIThread.RunJobs();
+        first.Close();
+
+        var (second, vm2) = Show();
+        Assert.False(vm2.IsRightPaneVisible);
+
+        var grid = second.FindControl<Grid>("MainGrid")!;
+        Assert.Equal(0, grid.ColumnDefinitions[1].ActualWidth);   // splitter
+        Assert.Equal(0, grid.ColumnDefinitions[2].ActualWidth);   // the pane itself
+
+        var scroll = second.FindControl<ScrollViewer>("MainScroll")!;
+        Assert.Equal(grid.Bounds.Width, scroll.Bounds.Width, 1);
+
+        second.Close();
     }
 
     /// <summary>A missing or corrupt settings file must not lose the pane.</summary>

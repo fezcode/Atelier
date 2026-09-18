@@ -55,8 +55,14 @@ public class WheelZoomTests
             PixelFormat.Bgra8888, AlphaFormat.Premul);
         vm.ImageWidth = imgW;
         vm.ImageHeight = imgH;
-        vm.ZoomLevel = 1.0;
 
+        Pump(win);
+
+        // Zoom last. Collapsing the right pane hands the viewer the rest of the window
+        // and refits the image, and that refit is posted to the dispatcher -- so a zoom
+        // set before the first pump is overwritten by it, leaving content that fits the
+        // viewport instead of the scrollable content every test here needs.
+        vm.ZoomLevel = 1.0;
         Pump(win);
 
         var scroll = win.FindControl<ScrollViewer>("MainScroll")!;

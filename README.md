@@ -4,6 +4,8 @@
 
 `Atelier` is a high-performance, modern image and SVG viewer built with **Avalonia UI** and **C#**. It provides a buttery-smooth viewing experience with native support for modern formats and advanced vector rendering.
 
+![Atelier viewing a 2400x1600 photograph, with zoom and frame controls](Assets/viewer.png)
+
 ## Features
 - **Avalonia UI Core**: High-performance, cross-platform XAML-based UI.
 - **Hardware Acceleration**: Uses SkiaSharp for GPU-accelerated rendering.

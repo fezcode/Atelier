@@ -90,11 +90,6 @@ namespace Atelier.Views
             {
                 if (DataContext is MainWindowViewModel vm)
                 {
-                    // The pane's own default is "open"; the saved choice wins over it.
-                    // InitHisashi has already run and loaded the file by this point --
-                    // DataContext is assigned after the constructor returns.
-                    vm.ShowMetadata = _userSettings.ShowMetadata;
-
                     vm.PropertyChanged += (sender, args) =>
                     {
                         if (args.PropertyName == nameof(MainWindowViewModel.IsRightPaneVisible))
@@ -110,6 +105,17 @@ namespace Atelier.Views
                             PersistShowMetadata(vm.ShowMetadata);
                         }
                     };
+
+                    // The pane's own default is "open"; the saved choice wins over it.
+                    // InitHisashi has already run and loaded the file by this point --
+                    // DataContext is assigned after the constructor returns.
+                    //
+                    // This has to come *after* the subscription above. Applying it first
+                    // left a launch with the pane closed raising IsRightPaneVisible into
+                    // nothing, so UpdateRightPaneGrid never ran and the third column kept
+                    // the 300px the XAML declares: an empty strip of window background
+                    // down the right edge that read as the pane it was meant to hide.
+                    vm.ShowMetadata = _userSettings.ShowMetadata;
                 }
             };
 

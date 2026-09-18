@@ -296,17 +296,42 @@ namespace Atelier.ViewModels
                 AddExifMetadata(result.Metadata, path);
             }
 
-            result.Siblings = ScanSiblings(Path.GetDirectoryName(path));
+            result.Siblings = ScanSiblings(path);
             return result;
         }
 
-        private static List<string> ScanSiblings(string? dir)
+        /// <summary>
+        /// How the sibling list learns the order Explorer is showing a folder in. A field so
+        /// the tests can answer it themselves: a test run has no Explorer window to ask, and
+        /// the real reader would only ever hand back null there.
+        /// </summary>
+        internal static Func<string, List<string>?> ExplorerOrderProvider =
+            dir => OperatingSystem.IsWindows() ? ExplorerOrder.TryGetViewOrder(dir) : null;
+
+        /// <summary>
+        /// The pictures Next/Prev walk, in the order the folder is laid out on screen.
+        ///
+        /// Explorer's window is asked first, so navigation matches what the user is looking
+        /// at -- a wallpapers folder sorted newest-first walks newest-first. Its answer is
+        /// only usable if it actually contains <paramref name="path"/>: a window that is
+        /// searching or filtered may not be showing the open picture at all, and a list
+        /// without it leaves nowhere to navigate to. Everything else -- no window on that
+        /// folder, nothing readable, a list holding nothing we can open -- falls back to the
+        /// plain alphabetical scan, which is what Atelier has always done.
+        /// </summary>
+        private static List<string> ScanSiblings(string path)
         {
+            var dir = Path.GetDirectoryName(path);
             if (dir == null) return new List<string>();
             try
             {
+                var onScreen = FromExplorer(dir);
+                if (onScreen != null &&
+                    onScreen.Any(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase)))
+                    return onScreen;
+
                 return System.IO.Directory.GetFiles(dir)
-                    .Where(f => NavigableExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                    .Where(IsNavigable)
                     .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                     .ToList();
             }
@@ -315,6 +340,25 @@ namespace Atelier.ViewModels
                 return new List<string>();
             }
         }
+
+        /// <summary>Explorer's view of a folder, reduced to the pictures we can open. Never throws.</summary>
+        private static List<string>? FromExplorer(string dir)
+        {
+            try
+            {
+                var shown = ExplorerOrderProvider(dir);
+                if (shown == null) return null;
+                var navigable = shown.Where(IsNavigable).ToList();
+                return navigable.Count > 0 ? navigable : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsNavigable(string file) =>
+            NavigableExtensions.Contains(Path.GetExtension(file).ToLowerInvariant());
 
         public async Task SaveImageAsync(string destinationPath)
         {
