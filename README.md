@@ -60,3 +60,9 @@ The Windows installer is built with [Forge](https://github.com/fezcode/Forge) fr
 
 The version lives in `<Version>` in `Atelier.csproj` — the About dialog reads it back off
 the assembly, so keep `[app] version` in `forge.toml` in step with it.
+
+## Application icon
+
+The editable icon design lives in `tools/make-icon.py`. Run
+`python tools/make-icon.py` with Python, Pillow and a C compiler (`gcc`, or set
+`CC`) to regenerate the SVG, PNG and multi-resolution Windows ICO assets.
