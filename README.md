@@ -11,6 +11,8 @@
 - **Hardware Acceleration**: Uses SkiaSharp for GPU-accelerated rendering.
 - **SVG Native Support**: Infinite zoom for vector graphics with high fidelity.
 - **HEIC/HEIF Support**: View modern smartphone photos directly via Magick.NET.
+- **Correct Orientation**: Photos that carry an EXIF orientation tag are shown the right way up, and rotating or flipping by hand picks up from there. Nothing is written until you save.
+- **Animated GIF & WebP**: Plays at the frame delays the file asks for, with **Space** to pause. Very long animations fall back to a still first frame rather than filling memory.
 - **Fluid Navigation**: Seamless directory browsing and centered zooming.
 - **Drag & Drop**: Open any supported file or folder instantly.
 - **Minimalist Design**: Clean, dark-themed interface focused on your content.
@@ -21,7 +23,12 @@
 - **Mouse Wheel + Shift**: Pan horizontally.
 - **Left/Right Arrow**: Previous/Next image in the folder.
 - **`F`**: Toggle Fullscreen.
-- **Ctrl+O / Ctrl+S**: Open / Save As.
+- **`R` / `Shift+R`**: Rotate right / left. **Edit → Flip Horizontal / Vertical** mirrors it.
+- **`Space`**: Pause or resume an animation.
+- **Ctrl+O**: Open. **Ctrl+S**: Save (enabled once a picture has been rotated). **Ctrl+Shift+S**: Save As.
+- **Ctrl+C / Ctrl+V**: Copy the picture — as pixels, as the file, and as its path, so it pastes into an editor, a folder or a text box alike — and open an image from the clipboard.
+- **`F2`**: Rename. **`Del`**: Move to the Recycle Bin. Atelier never deletes permanently.
+- **Ctrl+0 / Ctrl+1 / Ctrl+± **: Fit to window, actual size, zoom in/out.
 - **Drag & Drop**: Drop any file to view.
 - **File → Open File Location**: Reveal the current image in File Explorer.
 - **File → Set as Wallpaper**: Fill, Fit, Stretch, Center, Tile or Span. SVG, HEIC, AVIF, WebP and ICO are converted automatically, since Windows only accepts JPG, PNG and BMP.

@@ -33,7 +33,11 @@
                 <Menu Grid.Row="1" Name="MainMenu" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="15,0,0,0" Background="Transparent" ClipToBounds="False">
                     <MenuItem Header="_File">
                         <MenuItem Header="_Open..." Click="OpenFileName_Click" InputGesture="Ctrl+O"/>
-                        <MenuItem Header="_Save As..." Click="SaveAs_Click" InputGesture="Ctrl+S"/>
+                        <!-- Save only lights up once a rotation or flip has been made, which is
+                             the only thing in this release that can differ from the file. -->
+                        <MenuItem Header="_Save" Click="Save_Click" InputGesture="Ctrl+S"
+                                  IsEnabled="{Binding IsDirty}"/>
+                        <MenuItem Header="Save _As..." Click="SaveAs_Click" InputGesture="Ctrl+Shift+S"/>
                         <Separator/>
                         <MenuItem Header="Open File _Location" Click="OpenFileLocation_Click"
                                   IsEnabled="{Binding HasImage}"/>
@@ -46,6 +50,14 @@
                             <MenuItem Header="Sp_an" Tag="Span" Click="SetWallpaper_Click"
                                       ToolTip.Tip="One image across all monitors"/>
                         </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Re_name..." Click="Rename_Click" InputGesture="F2"
+                                  IsEnabled="{Binding HasImage}"/>
+                        <!-- Recycle Bin only: Atelier never hard-deletes, so there is always a
+                             way back from a mis-tap on a key that sits next to the arrows. -->
+                        <MenuItem Header="_Delete" Click="Delete_Click" InputGesture="Delete"
+                                  IsEnabled="{Binding HasImage}"
+                                  ToolTip.Tip="Move to the Recycle Bin"/>
                         <Separator/>
                         <MenuItem Header="File _Associations..." Click="FileAssociations_Click"/>
                         <Separator/>
@@ -68,7 +80,22 @@
                         </MenuItem>
                     </MenuItem>
                     <MenuItem Header="_Edit">
-                        <MenuItem Header="_Edit Image" Click="EditImage_Click" IsEnabled="{Binding IsViewMode}"/>
+                        <MenuItem Header="_Edit Image" Click="EditImage_Click" IsEnabled="{Binding CanEditImage}"/>
+                        <Separator/>
+                        <MenuItem Header="_Copy" Click="Copy_Click" InputGesture="Ctrl+C"
+                                  IsEnabled="{Binding HasImage}"
+                                  ToolTip.Tip="Copy the picture and the file, so it pastes into an editor or a folder alike"/>
+                        <MenuItem Header="_Paste" Click="Paste_Click" InputGesture="Ctrl+V"
+                                  ToolTip.Tip="Open an image from the clipboard"/>
+                        <Separator/>
+                        <MenuItem Header="Rotate _Right" Click="RotateRight_Click" InputGesture="R"
+                                  IsEnabled="{Binding HasImage}"/>
+                        <MenuItem Header="Rotate _Left" Click="RotateLeft_Click" InputGesture="Shift+R"
+                                  IsEnabled="{Binding HasImage}"/>
+                        <MenuItem Header="Flip _Horizontal" Click="FlipHorizontal_Click"
+                                  IsEnabled="{Binding HasImage}"/>
+                        <MenuItem Header="Flip _Vertical" Click="FlipVertical_Click"
+                                  IsEnabled="{Binding HasImage}"/>
                         <Separator/>
                         <MenuItem Header="Open with _Paint" Click="OpenInPaint_Click" IsEnabled="{Binding CanOpenInPaint}"
                                   ToolTip.Tip="Hand the file on disk to Microsoft Paint (BMP, JPEG, PNG, GIF, TIFF, ICO, WebP)"/>
@@ -94,14 +121,28 @@
                           VerticalScrollBarVisibility="Hidden" 
                           Background="Transparent">
                 <Panel Name="ImagePanel" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- Rotation belongs on the layout transform, not the render one: turning a
+                         landscape photo on its side changes the space it needs, and only a
+                         LayoutTransformControl re-measures so fit-to-view and centring follow it.
+                         The mirror is a render transform on the Image below, because flipping
+                         does not change the bounding box and so has no business in layout. -->
                     <LayoutTransformControl Name="ZoomTransform">
                         <LayoutTransformControl.LayoutTransform>
-                            <ScaleTransform ScaleX="{Binding ZoomLevel}" ScaleY="{Binding ZoomLevel}"/>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding RotationAngle}"/>
+                                <ScaleTransform ScaleX="{Binding ZoomLevel}" ScaleY="{Binding ZoomLevel}"/>
+                            </TransformGroup>
                         </LayoutTransformControl.LayoutTransform>
                         <Panel Name="ZoomContent">
-                            <Image Source="{Binding ImageSource}" 
+                            <Image Source="{Binding ImageSource}"
                                    IsVisible="{Binding ImageSource, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                   RenderOptions.BitmapInterpolationMode="HighQuality">
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"
+                                   RenderTransformOrigin="50%,50%">
+                                <!-- Applied before the rotation above, which is the order
+                                     ImageOrientation is defined in: mirror, then turn. -->
+                                <Image.RenderTransform>
+                                    <ScaleTransform ScaleX="{Binding MirrorScaleX}"/>
+                                </Image.RenderTransform>
                                 <Image.Transitions>
                                     <Transitions>
                                         <DoubleTransition Property="Opacity" Duration="0:0:0.3"/>

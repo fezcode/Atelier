@@ -9,6 +9,7 @@ using Avalonia.Svg.Skia;
 using Avalonia.Threading;
 using ImageMagick;
 using MetadataExtractor;
+using MetadataExtractor.Formats.Exif;
 using ReactiveUI;
 
 namespace Atelier.ViewModels
@@ -38,6 +39,8 @@ namespace Atelier.ViewModels
                 this.RaisePropertyChanged(nameof(HasImage));
                 this.RaisePropertyChanged(nameof(CanSetWallpaper));
                 this.RaisePropertyChanged(nameof(CanOpenInPaint));
+                this.RaisePropertyChanged(nameof(CanEditImage));
+                this.RaisePropertyChanged(nameof(IsDirty));
             }
         }
 
@@ -187,21 +190,100 @@ namespace Atelier.ViewModels
         private int _currentIndex = -1;
 
         private double _imageWidth;
+        /// <summary>The frame as stored on disk, before any rotation is applied.</summary>
         public double ImageWidth
         {
             get => _imageWidth;
-            set => this.RaiseAndSetIfChanged(ref _imageWidth, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _imageWidth, value);
+                this.RaisePropertyChanged(nameof(DisplayWidth));
+                this.RaisePropertyChanged(nameof(DisplayHeight));
+            }
         }
 
         private double _imageHeight;
         public double ImageHeight
         {
             get => _imageHeight;
-            set => this.RaiseAndSetIfChanged(ref _imageHeight, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _imageHeight, value);
+                this.RaisePropertyChanged(nameof(DisplayWidth));
+                this.RaisePropertyChanged(nameof(DisplayHeight));
+            }
         }
 
+        private ImageOrientation _orientation = ImageOrientation.Identity;
+
+        /// <summary>
+        /// What the file itself says, so <see cref="IsDirty"/> can mean "differs from
+        /// disk" rather than "was touched". Rotating a photo four times leaves nothing
+        /// to save, and neither does undoing a turn -- both land back on this value.
+        /// </summary>
+        private ImageOrientation _storedOrientation = ImageOrientation.Identity;
+
+        /// <summary>
+        /// How the picture is turned on screen. Starts at whatever the EXIF orientation
+        /// tag asked for and moves from there as the user rotates; see
+        /// <see cref="ImageOrientation"/> for why those are deliberately the same value.
+        /// </summary>
+        public ImageOrientation Orientation
+        {
+            get => _orientation;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _orientation, value);
+                this.RaisePropertyChanged(nameof(RotationAngle));
+                this.RaisePropertyChanged(nameof(MirrorScaleX));
+                this.RaisePropertyChanged(nameof(DisplayWidth));
+                this.RaisePropertyChanged(nameof(DisplayHeight));
+                this.RaisePropertyChanged(nameof(IsDirty));
+            }
+        }
+
+        /// <summary>Bound to the rotate half of the image transform.</summary>
+        public double RotationAngle => Orientation.Angle;
+
+        /// <summary>Bound to the mirror half: -1 flips the image left-to-right.</summary>
+        public double MirrorScaleX => Orientation.Mirrored ? -1.0 : 1.0;
+
+        /// <summary>
+        /// The size the image occupies once turned -- swapped from the stored frame when
+        /// it is on its side. Fit-to-view has to use these or a portrait photo is fitted
+        /// as though it were still landscape.
+        /// </summary>
+        public double DisplayWidth => Orientation.SwapsDimensions ? ImageHeight : ImageWidth;
+
+        public double DisplayHeight => Orientation.SwapsDimensions ? ImageWidth : ImageHeight;
+
+        /// <summary>
+        /// True when the rotation on screen is not the one in the file. Rotation is
+        /// deliberately non-destructive: nothing reaches the disk until Save.
+        /// </summary>
+        public bool IsDirty => HasImage && Orientation != _storedOrientation;
+
+        public void RotateRight() => Turn(Orientation.RotateRight());
+
+        public void RotateLeft() => Turn(Orientation.RotateLeft());
+
+        public void FlipHorizontal() => Turn(Orientation.FlipHorizontal());
+
+        public void FlipVertical() => Turn(Orientation.FlipVertical());
+
+        private void Turn(ImageOrientation next)
+        {
+            if (!HasImage) return;
+            Orientation = next;
+        }
+
+        /// <summary>
+        /// What Next/Prev will walk to. GIF and AVIF joined the list when animation
+        /// arrived: Atelier has always been able to display both, so arrow-keying past
+        /// them in a folder was a gap rather than a decision.
+        /// </summary>
         private static readonly string[] NavigableExtensions =
-            { ".jpg", ".jpeg", ".png", ".bmp", ".webp", ".svg", ".heic", ".heif" };
+            { ".jpg", ".jpeg", ".png", ".bmp", ".webp", ".svg", ".heic", ".heif", ".gif", ".avif" };
 
         /// <summary>Everything produced off the UI thread, ready to hand to the view.</summary>
         private sealed class LoadedImage
@@ -210,8 +292,53 @@ namespace Atelier.ViewModels
             public SvgSource? Svg;
             public double Width;
             public double Height;
+            public ImageOrientation Orientation = ImageOrientation.Identity;
+            public AnimatedImage? Animation;
+            public int AnimationFrames;
+            public bool AnimationTooLarge;
             public List<MetadataItem> Metadata = new();
             public List<string> Siblings = new();
+        }
+
+        private AnimatedImage? _animation;
+        private int _frameIndex;
+
+        /// <summary>True once an animation has been decoded and there is something to play.</summary>
+        public bool IsAnimated => _animation != null;
+
+        private bool _isPlaying;
+        public bool IsPlaying
+        {
+            get => _isPlaying;
+            private set => this.RaiseAndSetIfChanged(ref _isPlaying, value);
+        }
+
+        public int FrameCount => _animation?.FrameCount ?? 0;
+
+        /// <summary>How long the frame now on screen should be held for.</summary>
+        public TimeSpan CurrentFrameDelay =>
+            _animation == null ? TimeSpan.FromMilliseconds(100) : _animation.Delays[_frameIndex];
+
+        /// <summary>
+        /// Editing is colour work on a single still, so it is closed off for animations
+        /// rather than silently flattening one to a single frame inside a Save.
+        /// </summary>
+        public bool CanEditImage => HasImage && IsViewMode && !IsAnimated;
+
+        /// <summary>Moves to the next frame and loops. Driven by the view's timer.</summary>
+        public void AdvanceFrame()
+        {
+            if (_animation == null || !IsPlaying) return;
+
+            _frameIndex = (_frameIndex + 1) % _animation.FrameCount;
+            ImageSource = _animation.Frames[_frameIndex];
+        }
+
+        public void TogglePlayback()
+        {
+            if (_animation == null) return;
+            IsPlaying = !IsPlaying;
+            StatusMessage = IsPlaying ? null : "Paused";
         }
 
         public async Task LoadImageAsync(string path)
@@ -221,6 +348,10 @@ namespace Atelier.ViewModels
                 ErrorMessage = null;
                 ImagePath = path;
                 ZoomLevel = 1.0;
+                // A fresh picture starts upright until its own tag says otherwise; without
+                // this the previous image's rotation would carry over to the next one.
+                _storedOrientation = ImageOrientation.Identity;
+                Orientation = ImageOrientation.Identity;
                 MetadataItems = new ObservableCollection<MetadataItem>();
 
                 // Decoding, EXIF extraction and the directory scan are all file/CPU bound.
@@ -235,6 +366,25 @@ namespace Atelier.ViewModels
 
                 ImageWidth = loaded.Width;
                 ImageHeight = loaded.Height;
+
+                _storedOrientation = loaded.Orientation;
+                Orientation = loaded.Orientation;
+
+                // Only now that ImageSource points at the new picture is the previous
+                // animation safe to release -- its frames were what the view was drawing,
+                // and a decoded animation is far too large to leave to the collector.
+                var previous = _animation;
+                _animation = loaded.Animation;
+                _frameIndex = 0;
+                IsPlaying = _animation != null;
+                previous?.Dispose();
+
+                this.RaisePropertyChanged(nameof(IsAnimated));
+                this.RaisePropertyChanged(nameof(FrameCount));
+                this.RaisePropertyChanged(nameof(CanEditImage));
+
+                if (_animation != null)
+                    ImageSource = _animation.Frames[0];
 
                 // One assignment instead of one CollectionChanged per tag -- a photo with a
                 // few hundred EXIF tags used to trigger a layout pass for every one of them.
@@ -274,6 +424,11 @@ namespace Atelier.ViewModels
             else if (ext == ".heic" || ext == ".heif" || ext == ".avif")
             {
                 using var image = new MagickImage(path);
+                // The HEIF family carries its rotation in the container, and Magick is the
+                // only thing here that can read it -- Avalonia is handed flat PNG bytes and
+                // never sees the metadata. So this branch bakes the turn in rather than
+                // handing an orientation back for the view to apply, which would double it.
+                image.AutoOrient();
                 result.Width = image.Width;
                 result.Height = image.Height;
                 string formatLabel = ext == ".avif" ? "AVIF" : "HEIC";
@@ -294,6 +449,28 @@ namespace Atelier.ViewModels
                 AddBasicMetadata(result.Metadata, path,
                     $"{(int)bitmap.Size.Width}x{(int)bitmap.Size.Height} {ext.ToUpperInvariant().TrimStart('.')}");
                 AddExifMetadata(result.Metadata, path);
+                // Avalonia's decoder hands back the sensor frame and ignores the orientation
+                // tag entirely, so a portrait phone photo arrives on its side. The view turns
+                // it; see ImageOrientation.
+                result.Orientation = ReadOrientation(path);
+            }
+
+            // Asked before decoding: a long animation is enormous once its frames are
+            // expanded, so the file is measured first and declined if it will not fit.
+            var probe = AnimationDecoder.Probe(path);
+            if (probe.IsAnimated)
+            {
+                result.AnimationFrames = probe.FrameCount;
+                result.AnimationTooLarge = !probe.WithinBudget;
+                if (probe.WithinBudget) result.Animation = AnimationDecoder.Decode(path);
+
+                result.Metadata.Add(new MetadataItem
+                {
+                    Label = "Frames",
+                    Value = result.Animation != null
+                        ? probe.FrameCount.ToString()
+                        : $"{probe.FrameCount} (too large to animate, showing the first)",
+                });
             }
 
             result.Siblings = ScanSiblings(path);
@@ -380,6 +557,9 @@ namespace Atelier.ViewModels
                     _ => MagickFormat.Png
                 };
 
+                // Captured here: the worker thread must not read view model state.
+                var orientation = Orientation;
+
                 await Task.Run(() =>
                 {
                     try
@@ -393,7 +573,9 @@ namespace Atelier.ViewModels
                         }
 
                         using var image = new MagickImage(ImagePath, readSettings);
-                        
+
+                        ApplyOrientation(image, orientation);
+
                         if (format == MagickFormat.Jpeg)
                         {
                             image.Quality = 95;
@@ -432,6 +614,51 @@ namespace Atelier.ViewModels
             }
         }
 
+        /// <summary>
+        /// Turns the pixels to match what is on screen, then clears the orientation tag.
+        ///
+        /// Clearing the tag is the part that is easy to miss and impossible to ignore
+        /// afterwards: bake a 90 degree turn into a file that still says "rotate me 90
+        /// degrees" and every viewer, this one included, turns it again on the next open.
+        ///
+        /// Flop before rotate, matching how <see cref="ImageOrientation"/> is defined.
+        /// </summary>
+        private static void ApplyOrientation(MagickImage image, ImageOrientation orientation)
+        {
+            if (orientation.Mirrored) image.Flop();
+            if (orientation.Angle != 0) image.Rotate(orientation.Angle);
+
+            image.Orientation = OrientationType.TopLeft;
+            var exif = image.GetExifProfile();
+            if (exif != null)
+            {
+                exif.SetValue(ExifTag.Orientation, (ushort)1);
+                image.SetProfile(exif);
+            }
+        }
+
+        /// <summary>
+        /// Writes the rotation back to the picture the user is looking at -- what Ctrl+S
+        /// does once something has been turned.
+        ///
+        /// Reloads afterwards rather than just clearing the dirty flag. The file now holds
+        /// the rotated pixels and no tag, so the in-memory state has to come back to
+        /// identity with it; leaving the old angle in place would apply the same turn a
+        /// second time on the next save.
+        /// </summary>
+        public async Task SaveInPlaceAsync()
+        {
+            if (string.IsNullOrEmpty(ImagePath) || !IsDirty) return;
+
+            string path = ImagePath;
+            await SaveImageAsync(path);
+            if (ErrorMessage == null)
+            {
+                await LoadImageAsync(path);
+                StatusMessage = "Saved";
+            }
+        }
+
         private static void AddBasicMetadata(List<MetadataItem> items, string path, string typeInfo)
         {
             var info = new FileInfo(path);
@@ -453,6 +680,25 @@ namespace Atelier.ViewModels
                 unitIndex++;
             }
             return $"{size:0.##} {units[unitIndex]}";
+        }
+
+        /// <summary>
+        /// The EXIF orientation tag, or upright if the file does not carry one -- which
+        /// most PNGs and screenshots do not. Never throws: an unreadable tag is the same
+        /// as no tag, and refusing to open a picture over it would be absurd.
+        /// </summary>
+        private static ImageOrientation ReadOrientation(string path)
+        {
+            try
+            {
+                foreach (var directory in ImageMetadataReader.ReadMetadata(path).OfType<ExifIfd0Directory>())
+                {
+                    if (directory.TryGetInt32(ExifDirectoryBase.TagOrientation, out int tag))
+                        return ImageOrientation.FromExif(tag);
+                }
+            }
+            catch { }
+            return ImageOrientation.Identity;
         }
 
         private static void AddExifMetadata(List<MetadataItem> items, string path)
@@ -485,6 +731,7 @@ namespace Atelier.ViewModels
                 this.RaisePropertyChanged(nameof(IsRightPaneVisible));
                 this.RaisePropertyChanged(nameof(CanSetWallpaper));
                 this.RaisePropertyChanged(nameof(CanOpenInPaint));
+                this.RaisePropertyChanged(nameof(CanEditImage));
             }
         }
 
@@ -702,6 +949,183 @@ namespace Atelier.ViewModels
                 ErrorMessage = $"Failed to save: {ex.Message}";
             }
         }
+        /// <summary>
+        /// How a picture reaches the Recycle Bin. A field so tests can answer it
+        /// themselves -- the same seam <see cref="ExplorerOrderProvider"/> uses -- since a
+        /// test run has no business putting files in the user's real bin.
+        /// </summary>
+        internal static Func<string, bool> RecycleProvider =
+            path => OperatingSystem.IsWindows() && RecycleBin.Send(path);
+
+        /// <summary>
+        /// Moves the open picture to the Recycle Bin and shows whatever comes next.
+        ///
+        /// The successor is chosen before the list is touched: the following picture
+        /// normally, the preceding one when the last in the folder was deleted, and
+        /// nothing at all when that was the only one -- which empties the window rather
+        /// than leaving a stale image on screen with no file behind it.
+        /// </summary>
+        public async Task<bool> DeleteCurrentAsync()
+        {
+            if (!HasImage) return false;
+
+            string path = ImagePath!;
+            string? successor = null;
+            if (_currentIndex >= 0 && _fileList.Count > 1)
+            {
+                successor = _currentIndex + 1 < _fileList.Count
+                    ? _fileList[_currentIndex + 1]
+                    : _fileList[_currentIndex - 1];
+            }
+
+            if (!RecycleProvider(path))
+            {
+                ErrorMessage = $"Could not move {Path.GetFileName(path)} to the Recycle Bin.";
+                return false;
+            }
+
+            string name = Path.GetFileName(path);
+            if (successor != null)
+            {
+                await LoadImageAsync(successor);
+            }
+            else
+            {
+                CloseImage();
+            }
+
+            StatusMessage = $"{name} moved to the Recycle Bin";
+            return true;
+        }
+
+        /// <summary>Empties the window -- no file open, nothing drawn, nothing to navigate.</summary>
+        private void CloseImage()
+        {
+            ImagePath = null;
+            ImageSource = null;
+            ImageWidth = 0;
+            ImageHeight = 0;
+            _storedOrientation = ImageOrientation.Identity;
+            Orientation = ImageOrientation.Identity;
+            MetadataItems = new ObservableCollection<MetadataItem>();
+            _fileList = new List<string>();
+            _currentIndex = -1;
+
+            var animation = _animation;
+            _animation = null;
+            _frameIndex = 0;
+            IsPlaying = false;
+            animation?.Dispose();
+            this.RaisePropertyChanged(nameof(IsAnimated));
+            this.RaisePropertyChanged(nameof(FrameCount));
+            this.RaisePropertyChanged(nameof(CanEditImage));
+        }
+
+        /// <summary>
+        /// Renames the open picture and keeps following it.
+        ///
+        /// A bare name keeps the original extension: someone retyping "sunset" over
+        /// "IMG_0421.jpg" means to rename the photo, not to strip what makes it openable.
+        /// </summary>
+        public async Task<bool> RenameCurrentAsync(string newName)
+        {
+            if (!HasImage) return false;
+
+            string path = ImagePath!;
+            string? dir = Path.GetDirectoryName(path);
+            if (dir == null) return false;
+
+            newName = (newName ?? string.Empty).Trim();
+            if (newName.Length == 0)
+            {
+                ErrorMessage = "The name cannot be empty.";
+                return false;
+            }
+
+            if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                ErrorMessage = "A file name cannot contain \\ / : * ? \" < > |";
+                return false;
+            }
+
+            if (Path.GetExtension(newName).Length == 0)
+                newName += Path.GetExtension(path);
+
+            string target = Path.Combine(dir, newName);
+
+            // Renaming a file to the name it already has is a no-op, not a collision
+            // with itself. On Windows that comparison has to ignore case.
+            if (string.Equals(target, path, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (File.Exists(target))
+            {
+                ErrorMessage = $"{newName} already exists in this folder.";
+                return false;
+            }
+
+            try
+            {
+                File.Move(path, target);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Could not rename: {ex.Message}";
+                return false;
+            }
+
+            await LoadImageAsync(target);
+            StatusMessage = $"Renamed to {newName}";
+            return true;
+        }
+
+        /// <summary>
+        /// Puts the picture on the clipboard as pixels, as a file and as its path at
+        /// once, so it pastes usefully into an editor, a folder and a text box alike.
+        /// </summary>
+        public bool CopyToClipboard()
+        {
+            if (!HasImage) return false;
+            if (!OperatingSystem.IsWindows())
+            {
+                ErrorMessage = "Copying to the clipboard is only available on Windows.";
+                return false;
+            }
+
+            if (!ClipboardImage.Copy(ImagePath!))
+            {
+                ErrorMessage = "Could not copy to the clipboard.";
+                return false;
+            }
+
+            StatusMessage = "Copied";
+            return true;
+        }
+
+        /// <summary>
+        /// Opens whatever image the clipboard is holding. A copied file is opened where
+        /// it lies; loose pixels are written to a scratch file first, so everything
+        /// downstream keeps working in terms of a real path.
+        /// </summary>
+        public async Task<bool> PasteFromClipboardAsync()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                ErrorMessage = "Pasting is only available on Windows.";
+                return false;
+            }
+
+            string? path = ClipboardImage.Paste(IsNavigable);
+            if (path == null)
+            {
+                StatusMessage = "No image on the clipboard";
+                return false;
+            }
+
+            await LoadImageAsync(path);
+            return ErrorMessage == null;
+        }
+
         public async Task NextImage()
         {
             if (_fileList.Count <= 1 || _currentIndex == -1) return;

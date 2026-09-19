@@ -104,6 +104,11 @@ namespace Atelier.Views
                         {
                             PersistShowMetadata(vm.ShowMetadata);
                         }
+                        else if (args.PropertyName == nameof(MainWindowViewModel.IsAnimated)
+                              || args.PropertyName == nameof(MainWindowViewModel.IsPlaying))
+                        {
+                            SyncAnimation();
+                        }
                     };
 
                     // The pane's own default is "open"; the saved choice wins over it.
@@ -120,6 +125,7 @@ namespace Atelier.Views
             };
 
             InitHisashi();
+            SweepPasteScratch();
         }
 
         // ---- Hisashi OS Window Layer (hoswl) ---------------------------------------
@@ -210,6 +216,9 @@ namespace Atelier.Views
             var files = e.Data.GetFiles();
             if (files != null && files.FirstOrDefault() is { } file)
             {
+                // The guard lives here rather than in LoadAndFitAsync: that stays a plain
+                // loader, which is what the tests and the command line use it as.
+                if (!await EnsureSavedAsync()) return;
                 await LoadAndFitAsync(file.Path.LocalPath);
             }
         }
@@ -218,6 +227,7 @@ namespace Atelier.Views
         {
             var topLevel = GetTopLevel(this);
             if (topLevel == null) return;
+            if (!await EnsureSavedAsync()) return;
 
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
@@ -585,7 +595,7 @@ namespace Atelier.Views
 
         private void FitToView()
         {
-            if (DataContext is MainWindowViewModel vm && vm.ImageWidth > 0 && vm.ImageHeight > 0)
+            if (DataContext is MainWindowViewModel vm && vm.DisplayWidth > 0 && vm.DisplayHeight > 0)
             {
                 var scroll = this.FindControl<ScrollViewer>("MainScroll");
                 if (scroll == null) return;
@@ -602,8 +612,10 @@ namespace Atelier.Views
 
                 if (viewW > 0 && viewH > 0)
                 {
-                    double ratioW = viewW / vm.ImageWidth;
-                    double ratioH = viewH / vm.ImageHeight;
+                    // The turned size, not the stored one: a portrait photo held sideways
+                    // by its EXIF tag has to be fitted as the portrait it is displayed as.
+                    double ratioW = viewW / vm.DisplayWidth;
+                    double ratioH = viewH / vm.DisplayHeight;
                     vm.ZoomLevel = Math.Min(ratioW, ratioH);
 
                     // Reset offset to center the newly fitted image
@@ -859,6 +871,7 @@ namespace Atelier.Views
         {
             if (DataContext is MainWindowViewModel vm)
             {
+                if (!await EnsureSavedAsync()) return;
                 await vm.NextImage();
                 Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
             }
@@ -868,6 +881,7 @@ namespace Atelier.Views
         {
             if (DataContext is MainWindowViewModel vm)
             {
+                if (!await EnsureSavedAsync()) return;
                 await vm.PrevImage();
                 Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
             }
@@ -953,16 +967,73 @@ namespace Atelier.Views
         {
             if (DataContext is MainWindowViewModel vm)
             {
+                bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+                bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+
                 if (e.Key == Key.Right)
                 {
+                    if (!await EnsureSavedAsync()) { e.Handled = true; return; }
                     await vm.NextImage();
                     Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Left)
                 {
+                    if (!await EnsureSavedAsync()) { e.Handled = true; return; }
                     await vm.PrevImage();
                     Dispatcher.UIThread.Post(FitToView, Avalonia.Threading.DispatcherPriority.Loaded);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.R && !ctrl)
+                {
+                    // Shift turns it the other way, the way Shift reverses a cycle elsewhere.
+                    if (shift) RotateLeft_Click(null, new RoutedEventArgs());
+                    else RotateRight_Click(null, new RoutedEventArgs());
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.C && ctrl)
+                {
+                    Copy_Click(null, new RoutedEventArgs());
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.V && ctrl)
+                {
+                    Paste_Click(null, new RoutedEventArgs());
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Delete)
+                {
+                    Delete_Click(null, new RoutedEventArgs());
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.F2)
+                {
+                    Rename_Click(null, new RoutedEventArgs());
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Space && vm.IsAnimated)
+                {
+                    vm.TogglePlayback();
+                    e.Handled = true;
+                }
+                else if (ctrl && (e.Key == Key.D0 || e.Key == Key.NumPad0))
+                {
+                    FitToView();
+                    e.Handled = true;
+                }
+                else if (ctrl && (e.Key == Key.D1 || e.Key == Key.NumPad1))
+                {
+                    vm.ZoomLevel = 1.0;
+                    e.Handled = true;
+                }
+                else if (ctrl && (e.Key == Key.OemPlus || e.Key == Key.Add))
+                {
+                    ZoomAroundViewportCentre(ButtonZoomStep);
+                    e.Handled = true;
+                }
+                else if (ctrl && (e.Key == Key.OemMinus || e.Key == Key.Subtract))
+                {
+                    ZoomAroundViewportCentre(1.0 / ButtonZoomStep);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.F)
@@ -984,13 +1055,16 @@ namespace Atelier.Views
                         e.Handled = true;
                     }
                 }
-                else if (e.Key == Key.O && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+                else if (e.Key == Key.O && ctrl)
                 {
                     OpenFileName_Click(null, new RoutedEventArgs());
                 }
-                else if (e.Key == Key.S && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+                else if (e.Key == Key.S && ctrl)
                 {
-                    SaveAs_Click(null, new RoutedEventArgs());
+                    // Ctrl+S saves the picture now that a rotation can leave it unsaved;
+                    // Save As moves to Ctrl+Shift+S, which is where it sits everywhere else.
+                    if (shift) SaveAs_Click(null, new RoutedEventArgs());
+                    else Save_Click(null, new RoutedEventArgs());
                 }
             }
             base.OnKeyDown(e);
