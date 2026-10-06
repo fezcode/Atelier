@@ -9,7 +9,9 @@
   
     <Application.Styles>
         <FluentTheme />
-        
+        <!-- Edit mode's Edit Colours dialog uses ColorView. -->
+        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+
         <!-- Global App Styling -->
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="avares://Atelier/Assets/Exo-VariableFont_wght.ttf#Exo, Segoe UI, Arial, sans-serif"/>

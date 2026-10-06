@@ -125,6 +125,7 @@ namespace Atelier.Views
             };
 
             InitHisashi();
+            InitPaint();
             SweepPasteScratch();
         }
 
@@ -250,6 +251,13 @@ namespace Atelier.Views
 
         public async void SaveAs_Click(object? sender, RoutedEventArgs e)
         {
+            // While editing, Save As saves the edit -- not the untouched file underneath it.
+            if (ViewModel is { IsEditMode: true })
+            {
+                SaveAsEdit_Click(sender, e);
+                return;
+            }
+
             var topLevel = GetTopLevel(this);
             if (topLevel == null) return;
 
@@ -768,6 +776,8 @@ namespace Atelier.Views
                 vm.EnterEditMode();
                 // Ensure controls are visible when editing
                 if (!vm.ShowControls) vm.ShowControls = true;
+                // The ribbon takes height from the viewer, so the picture is refitted under it.
+                Dispatcher.UIThread.Post(FitToView, DispatcherPriority.Loaded);
             }
         }
 
@@ -848,6 +858,9 @@ namespace Atelier.Views
                     new FilePickerFileType("PNG Image") { Patterns = new[] { "*.png" } },
                     new FilePickerFileType("JPEG Image") { Patterns = new[] { "*.jpg", "*.jpeg" } },
                     new FilePickerFileType("WebP Image") { Patterns = new[] { "*.webp" } },
+                    new FilePickerFileType("BMP Image") { Patterns = new[] { "*.bmp" } },
+                    new FilePickerFileType("GIF Image") { Patterns = new[] { "*.gif" } },
+                    new FilePickerFileType("Icon File") { Patterns = new[] { "*.ico" } },
                     new FilePickerFileType("AVIF Image") { Patterns = new[] { "*.avif" } }
                 }
             });
@@ -965,6 +978,22 @@ namespace Atelier.Views
 
         protected override async void OnKeyDown(KeyEventArgs e)
         {
+            // Typing -- the text tool's box above all -- owns the keyboard. Otherwise
+            // "f" in a caption would toggle fullscreen and "r" would rotate the picture.
+            if (IsTypingInTextBox)
+            {
+                if (HandleTextBoxKey(e)) e.Handled = true;
+                base.OnKeyDown(e);
+                return;
+            }
+
+            if (DataContext is MainWindowViewModel { IsEditMode: true } editing && HandleEditKey(e, editing))
+            {
+                e.Handled = true;
+                base.OnKeyDown(e);
+                return;
+            }
+
             if (DataContext is MainWindowViewModel vm)
             {
                 bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
@@ -1072,7 +1101,12 @@ namespace Atelier.Views
 
         private void OnScrollPointerPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            if (HandlePaintPressed(e)) return;
+
+            var props = e.GetCurrentPoint(this).Properties;
+            // The middle button always pans; in edit mode it is the way to pan without
+            // putting the brush down, alongside Space+drag.
+            if (props.IsLeftButtonPressed || props.IsMiddleButtonPressed)
             {
                 if (DataContext is MainWindowViewModel vm && vm.IsFrameMode
                     && WindowState != WindowState.FullScreen
@@ -1091,6 +1125,8 @@ namespace Atelier.Views
 
         private void OnScrollPointerMoved(object? sender, PointerEventArgs e)
         {
+            if (!_isPanning && HandlePaintMoved(e)) return;
+
             if (_isPanning)
             {
                 var currentPos = e.GetPosition(this);
@@ -1118,6 +1154,8 @@ namespace Atelier.Views
 
         private void OnScrollPointerReleased(object? sender, PointerReleasedEventArgs e)
         {
+            if (HandlePaintReleased(e)) return;
+
             if (_isPanning)
             {
                 _isPanning = false;

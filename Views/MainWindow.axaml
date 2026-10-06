@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Atelier.ViewModels"
+        xmlns:views="using:Atelier.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
@@ -18,6 +19,190 @@
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
+
+    <Window.Styles>
+        <!-- ==== Edit mode ribbon (Paint-style) ==== -->
+        <Style Selector="Border.Ribbon">
+            <Setter Property="Background" Value="#0D0D0D"/>
+            <Setter Property="BorderBrush" Value="#1A1A1A"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+        <Style Selector="DockPanel.RibGroup">
+            <Setter Property="Margin" Value="5,0"/>
+        </Style>
+        <Style Selector="TextBlock.RibLabel">
+            <Setter Property="DockPanel.Dock" Value="Bottom"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#6A6A6A"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.5"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <Style Selector="Rectangle.RibSep">
+            <Setter Property="Width" Value="1"/>
+            <Setter Property="Fill" Value="#222222"/>
+            <Setter Property="Margin" Value="2,4"/>
+        </Style>
+        <Style Selector="Path.Ico">
+            <Setter Property="Stroke" Value="#DDDDDD"/>
+            <Setter Property="StrokeThickness" Value="1.3"/>
+            <Setter Property="StrokeLineCap" Value="Round"/>
+            <Setter Property="StrokeJoin" Value="Round"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Stretch" Value="None"/>
+        </Style>
+        <Style Selector=":disabled Path.Ico">
+            <Setter Property="Stroke" Value="#555555"/>
+        </Style>
+        <Style Selector="TextBlock.RibText">
+            <Setter Property="Foreground" Value="#DDDDDD"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector=":disabled TextBlock.RibText">
+            <Setter Property="Foreground" Value="#555555"/>
+        </Style>
+
+        <!-- Ribbon buttons and tool toggles. Not focusable, so the keyboard shortcuts keep
+             reaching the window after a click on the ribbon. -->
+        <Style Selector="Button.Rib, RadioButton.Tool, ToggleButton.Rib">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="MinWidth" Value="30"/>
+            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.Rib:disabled /template/ ContentPresenter, ToggleButton.Rib:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="RadioButton.Tool">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.Tool:pointerover">
+            <Setter Property="Background" Value="#1F1F1F"/>
+        </Style>
+        <Style Selector="RadioButton.Tool:checked">
+            <Setter Property="Background" Value="#16304F"/>
+            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+        </Style>
+        <Style Selector="Button.Rib:pointerover /template/ ContentPresenter, ToggleButton.Rib:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#1F1F1F"/>
+            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+        </Style>
+        <Style Selector="ToggleButton.Rib:checked /template/ ContentPresenter">
+            <Setter Property="Background" Value="#16304F"/>
+            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+        </Style>
+
+        <!-- Shape gallery: a dense grid of outlines, highlighted only while the shape tool is in hand. -->
+        <Style Selector="ListBox.Gallery">
+            <Setter Property="Background" Value="#111111"/>
+            <Setter Property="BorderBrush" Value="#222222"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+        <Style Selector="ListBox.Gallery ListBoxItem">
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+        <Style Selector="ListBox.Gallery ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="#16304F"/>
+        </Style>
+
+        <!-- Colour wells and palette swatches -->
+        <Style Selector="Button.Well">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="4,3"/>
+        </Style>
+        <Style Selector="Button.Well.active">
+            <Setter Property="Background" Value="#16304F"/>
+            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+        </Style>
+        <Style Selector="Button.Well.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#16304F"/>
+            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+        </Style>
+        <Style Selector="Border.Swatch">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="BorderBrush" Value="#3A3A3A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Border.Swatch:pointerover">
+            <Setter Property="BorderBrush" Value="#FFFFFF"/>
+        </Style>
+
+        <!-- The text tool's box: invisible chrome, so what is typed looks like what will be drawn. -->
+        <Style Selector="TextBox.CanvasText">
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="30"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
+        <Style Selector="TextBox.CanvasText /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="TextBox.CanvasText:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="TextBox.CanvasText:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style Selector="TextBlock.StatusText">
+            <Setter Property="Foreground" Value="#BBBBBB"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Path.StatusIco">
+            <Setter Property="Stroke" Value="#777777"/>
+            <Setter Property="StrokeThickness" Value="1.2"/>
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Stretch" Value="None"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+    </Window.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto">
         <!-- Menu Bar Area -->
@@ -82,6 +267,14 @@
                     <MenuItem Header="_Edit">
                         <MenuItem Header="_Edit Image" Click="EditImage_Click" IsEnabled="{Binding CanEditImage}"/>
                         <Separator/>
+                        <!-- Undo/Redo and Cut only mean something while painting. -->
+                        <MenuItem Header="_Undo" Click="Undo_Click" InputGesture="Ctrl+Z"
+                                  IsEnabled="{Binding CanUndo}" IsVisible="{Binding IsEditMode}"/>
+                        <MenuItem Header="Re_do" Click="Redo_Click" InputGesture="Ctrl+Y"
+                                  IsEnabled="{Binding CanRedo}" IsVisible="{Binding IsEditMode}"/>
+                        <Separator IsVisible="{Binding IsEditMode}"/>
+                        <MenuItem Header="Cu_t" Click="Cut_Click" InputGesture="Ctrl+X"
+                                  IsEnabled="{Binding HasSelection}" IsVisible="{Binding IsEditMode}"/>
                         <MenuItem Header="_Copy" Click="Copy_Click" InputGesture="Ctrl+C"
                                   IsEnabled="{Binding HasImage}"
                                   ToolTip.Tip="Copy the picture and the file, so it pastes into an editor or a folder alike"/>
@@ -100,6 +293,30 @@
                         <MenuItem Header="Open with _Paint" Click="OpenInPaint_Click" IsEnabled="{Binding CanOpenInPaint}"
                                   ToolTip.Tip="Hand the file on disk to Microsoft Paint (BMP, JPEG, PNG, GIF, TIFF, ICO, WebP)"/>
                     </MenuItem>
+                    <!-- Paint's Image group, as a menu. Only there while editing. -->
+                    <MenuItem Header="_Image" IsVisible="{Binding IsEditMode}">
+                        <MenuItem Header="Select _All" Click="SelectAll_Click" InputGesture="Ctrl+A"/>
+                        <MenuItem Header="_Invert Selection" Click="InvertSelection_Click"/>
+                        <MenuItem Header="_Transparent Selection" ToggleType="CheckBox"
+                                  IsChecked="{Binding TransparentSelection, Mode=TwoWay}"/>
+                        <MenuItem Header="De_lete Selection" Click="DeleteSelection_Click" InputGesture="Delete"
+                                  IsEnabled="{Binding HasSelection}"/>
+                        <Separator/>
+                        <MenuItem Header="_Crop to Selection" Click="Crop_Click" InputGesture="Ctrl+Shift+X"
+                                  IsEnabled="{Binding HasSelection}"/>
+                        <MenuItem Header="_Resize and Skew..." Click="ResizeSkew_Click" InputGesture="Ctrl+W"/>
+                        <MenuItem Header="Image _Properties..." Click="ImageProperties_Click" InputGesture="Ctrl+E"/>
+                        <Separator/>
+                        <MenuItem Header="Rotate Right 90°" Tag="90" Click="RotateCanvas_Click"/>
+                        <MenuItem Header="Rotate Left 90°" Tag="270" Click="RotateCanvas_Click"/>
+                        <MenuItem Header="Rotate 180°" Tag="180" Click="RotateCanvas_Click"/>
+                        <MenuItem Header="Flip _Vertical" Tag="V" Click="FlipCanvas_Click"/>
+                        <MenuItem Header="Flip _Horizontal" Tag="H" Click="FlipCanvas_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Invert C_olors" Click="InvertColors_Click" InputGesture="Ctrl+Shift+I"/>
+                        <MenuItem Header="_Gridlines" ToggleType="CheckBox" InputGesture="Ctrl+G"
+                                  IsChecked="{Binding ShowGridlines, Mode=TwoWay}"/>
+                    </MenuItem>
                     <MenuItem Header="_Help">
                         <MenuItem Header="_About" Click="About_Click"/>
                     </MenuItem>
@@ -115,8 +332,347 @@
                 <ColumnDefinition Width="300" MinWidth="150" MaxWidth="600"/>
             </Grid.ColumnDefinitions>
 
+            <Grid Grid.Column="0" RowDefinitions="Auto,*">
+
+            <!-- ==== Paint ribbon: edit mode only ==== -->
+            <Border Grid.Row="0" Name="PaintRibbon" Classes="Ribbon" IsVisible="{Binding IsEditMode}">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal" Margin="6,6,6,4" Height="92">
+
+                        <!-- History -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="History"/>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Button Classes="Rib" Click="Undo_Click" IsEnabled="{Binding CanUndo}" ToolTip.Tip="Undo (Ctrl+Z)">
+                                    <Path Classes="Ico" Data="M 5 8 L 2 5 L 5 2 M 2 5 L 11 5 C 14 5 16 7 16 10 C 16 13 14 15 11 15 L 7 15"/>
+                                </Button>
+                                <Button Classes="Rib" Click="Redo_Click" IsEnabled="{Binding CanRedo}" ToolTip.Tip="Redo (Ctrl+Y)">
+                                    <Path Classes="Ico" Data="M 13 8 L 16 5 L 13 2 M 16 5 L 7 5 C 4 5 2 7 2 10 C 2 13 4 15 7 15 L 11 15"/>
+                                </Button>
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep"/>
+
+                        <!-- Clipboard -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="Clipboard"/>
+                            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                <Button Classes="Rib" Click="Paste_Click" ToolTip.Tip="Paste (Ctrl+V)" Padding="6,4">
+                                    <StackPanel Spacing="2">
+                                        <Path Classes="Ico" HorizontalAlignment="Center" Data="M 5 3 L 3 3 L 3 16 L 15 16 L 15 3 L 13 3 M 6 1.5 L 12 1.5 L 12 4.5 L 6 4.5 Z M 6 9 L 12 9 M 6 12 L 10 12"/>
+                                        <TextBlock Classes="RibText" Text="Paste"/>
+                                    </StackPanel>
+                                </Button>
+                                <StackPanel Spacing="2">
+                                    <Button Classes="Rib" Click="Cut_Click" IsEnabled="{Binding HasSelection}" ToolTip.Tip="Cut (Ctrl+X)">
+                                        <Path Classes="Ico" Data="M 7 13.5 A 2.5 2.5 0 1 1 2 13.5 A 2.5 2.5 0 1 1 7 13.5 M 16 13.5 A 2.5 2.5 0 1 1 11 13.5 A 2.5 2.5 0 1 1 16 13.5 M 6 11.5 L 13 1.5 M 12 11.5 L 5 1.5"/>
+                                    </Button>
+                                    <Button Classes="Rib" Click="Copy_Click" ToolTip.Tip="Copy (Ctrl+C) -- the selection, or the whole picture">
+                                        <Path Classes="Ico" Data="M 6 6 L 15 6 L 15 16 L 6 16 Z M 3 12 L 3 2 L 12 2 L 12 4"/>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep"/>
+
+                        <!-- Image -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="Image"/>
+                            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                <StackPanel Spacing="0">
+                                    <RadioButton Classes="Tool" GroupName="PaintTools" Padding="6,4"
+                                                 IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Select}"
+                                                 ToolTip.Tip="Rectangular selection (S)">
+                                        <StackPanel Spacing="2">
+                                            <Path Classes="Ico" HorizontalAlignment="Center" StrokeDashArray="2,1.5" Data="M 2.5 3.5 L 15.5 3.5 L 15.5 14.5 L 2.5 14.5 Z"/>
+                                            <TextBlock Classes="RibText" Text="Select"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <Button Classes="Rib" MinHeight="16" Padding="0" HorizontalAlignment="Stretch" ToolTip.Tip="Selection options">
+                                        <Path Classes="Ico" Height="8" Data="M 6 2 L 9 5 L 12 2"/>
+                                        <Button.Flyout>
+                                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                <MenuItem Header="Rectangular selection" Click="RectSelect_Click"/>
+                                                <MenuItem Header="Free-form selection" Click="FreeSelect_Click"/>
+                                                <Separator/>
+                                                <MenuItem Header="Select all" InputGesture="Ctrl+A" Click="SelectAll_Click"/>
+                                                <MenuItem Header="Invert selection" Click="InvertSelection_Click"/>
+                                                <MenuItem Header="Delete" InputGesture="Delete" Click="DeleteSelection_Click"/>
+                                                <MenuItem Header="Transparent selection" ToggleType="CheckBox"
+                                                          IsChecked="{Binding TransparentSelection, Mode=TwoWay}"/>
+                                            </MenuFlyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                </StackPanel>
+                                <RadioButton Classes="Tool" GroupName="PaintTools"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=FreeSelect}"
+                                             ToolTip.Tip="Free-form selection">
+                                    <Path Classes="Ico" StrokeDashArray="2,1.5" Data="M 3 7 C 3 2 14 1 15 6 C 16 10 10 10 9 13 C 8 16 3 13 3 7 Z"/>
+                                </RadioButton>
+                                <StackPanel Spacing="2">
+                                    <Button Classes="Rib" Click="Crop_Click" IsEnabled="{Binding HasSelection}" ToolTip.Tip="Crop to selection (Ctrl+Shift+X)">
+                                        <Path Classes="Ico" Data="M 5 1 L 5 13 L 17 13 M 1 5 L 13 5 L 13 17"/>
+                                    </Button>
+                                    <Button Classes="Rib" Click="ResizeSkew_Click" ToolTip.Tip="Resize and skew (Ctrl+W)">
+                                        <Path Classes="Ico" Data="M 2 6 L 2 2 L 6 2 M 2 2 L 8 8 M 16 12 L 16 16 L 12 16 M 16 16 L 10 10 M 11 2 L 16 2 L 16 7 M 2 11 L 2 16 L 7 16"/>
+                                    </Button>
+                                    <Button Classes="Rib" ToolTip.Tip="Rotate or flip">
+                                        <Path Classes="Ico" Data="M 14 9 A 5 5 0 1 1 9 4 L 12 4 M 10 1 L 13 4 L 10 7"/>
+                                        <Button.Flyout>
+                                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                <MenuItem Header="Rotate right 90°" Tag="90" Click="RotateCanvas_Click"/>
+                                                <MenuItem Header="Rotate left 90°" Tag="270" Click="RotateCanvas_Click"/>
+                                                <MenuItem Header="Rotate 180°" Tag="180" Click="RotateCanvas_Click"/>
+                                                <MenuItem Header="Flip vertical" Tag="V" Click="FlipCanvas_Click"/>
+                                                <MenuItem Header="Flip horizontal" Tag="H" Click="FlipCanvas_Click"/>
+                                            </MenuFlyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep"/>
+
+                        <!-- Tools -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="Tools"/>
+                            <Grid ColumnDefinitions="Auto,Auto,Auto" RowDefinitions="Auto,Auto" VerticalAlignment="Center">
+                                <RadioButton Grid.Row="0" Grid.Column="0" Classes="Tool" GroupName="PaintTools"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Pencil}"
+                                             ToolTip.Tip="Pencil (P)">
+                                    <Path Classes="Ico" Data="M 2.5 15.5 L 3.5 11.5 L 12 3 L 15 6 L 6.5 14.5 Z M 10 5 L 13 8"/>
+                                </RadioButton>
+                                <RadioButton Grid.Row="0" Grid.Column="1" Classes="Tool" GroupName="PaintTools"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Fill}"
+                                             ToolTip.Tip="Fill with colour (G)">
+                                    <Path Classes="Ico" Data="M 2.5 9 L 8 3.5 L 13.5 9 L 8 14.5 Z M 14 10 C 16 13 16 15 15 15 C 13 15 13 13 14 10 Z M 6 1.5 L 8 3.5"/>
+                                </RadioButton>
+                                <RadioButton Grid.Row="0" Grid.Column="2" Classes="Tool" GroupName="PaintTools"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Text}"
+                                             ToolTip.Tip="Text (T)">
+                                    <Path Classes="Ico" Data="M 3 15.5 L 9 2.5 L 15 15.5 M 5.5 10.5 L 12.5 10.5"/>
+                                </RadioButton>
+                                <RadioButton Grid.Row="1" Grid.Column="0" Classes="Tool" GroupName="PaintTools"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Eraser}"
+                                             ToolTip.Tip="Eraser (E) -- right-drag replaces colour 1 with colour 2">
+                                    <Path Classes="Ico" Data="M 6.5 15.5 L 1.5 10.5 L 10 2 L 16 8 L 8.5 15.5 Z M 4.5 7.5 L 10.5 13.5 M 6.5 15.5 L 16 15.5"/>
+                                </RadioButton>
+                                <RadioButton Grid.Row="1" Grid.Column="1" Classes="Tool" GroupName="PaintTools"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Picker}"
+                                             ToolTip.Tip="Colour picker (I)">
+                                    <Path Classes="Ico" Data="M 12 1.5 L 16.5 6 L 13 9.5 L 8.5 5 Z M 10 6.5 L 3.5 13 L 2.5 16 L 5.5 15 L 12 8.5"/>
+                                </RadioButton>
+                                <RadioButton Grid.Row="1" Grid.Column="2" Classes="Tool" GroupName="PaintTools"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Magnifier}"
+                                             ToolTip.Tip="Magnifier (Z) -- click to zoom in, right-click to zoom out">
+                                    <Path Classes="Ico" Data="M 11.5 7 A 4.5 4.5 0 1 1 2.5 7 A 4.5 4.5 0 1 1 11.5 7 M 10.5 10.5 L 16 16"/>
+                                </RadioButton>
+                            </Grid>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep"/>
+
+                        <!-- Brushes -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="Brushes"/>
+                            <StackPanel Spacing="0" VerticalAlignment="Center">
+                                <RadioButton Classes="Tool" GroupName="PaintTools" Padding="6,4" MinWidth="64"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Brush}"
+                                             ToolTip.Tip="{Binding BrushName}">
+                                    <StackPanel Spacing="2">
+                                        <Path Classes="Ico" HorizontalAlignment="Center" Data="M 16 1.5 L 8 10 L 10 12 L 17 3 Z M 7 11 C 3.5 11 4 14.5 1.5 16.5 C 6 16.5 9 15 9 13 Z"/>
+                                        <TextBlock Classes="RibText" Text="Brushes" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <Button Classes="Rib" Name="BrushPickerButton" MinHeight="16" Padding="0" HorizontalAlignment="Stretch" ToolTip.Tip="Choose a brush">
+                                    <Path Classes="Ico" Height="8" Data="M 6 2 L 9 5 L 12 2"/>
+                                    <Button.Flyout>
+                                        <Flyout Placement="BottomEdgeAlignedLeft">
+                                            <ListBox ItemsSource="{Binding BrushGallery}" Width="200"
+                                                     SelectedItem="{Binding SelectedBrushOption, Mode=TwoWay}"
+                                                     SelectionChanged="BrushList_SelectionChanged">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:BrushOption">
+                                                        <TextBlock Text="{Binding Name}" FontSize="13"/>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep"/>
+
+                        <!-- Shapes -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="Shapes"/>
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <ListBox Classes="Gallery" Width="164" Height="70"
+                                         ItemsSource="{Binding ShapeGallery}"
+                                         SelectedItem="{Binding SelectedShapeOption, Mode=TwoWay}"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ShapeOption">
+                                            <Path Data="{Binding Icon}" ToolTip.Tip="{Binding Name}"
+                                                  Stroke="#DDDDDD" StrokeThickness="1.1" Width="18" Height="18" Stretch="None"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <StackPanel Spacing="4" VerticalAlignment="Center">
+                                    <ComboBox Width="104" FontSize="11" SelectedIndex="{Binding OutlineIndex, Mode=TwoWay}" ToolTip.Tip="Shape outline (colour 1)">
+                                        <ComboBoxItem Content="No outline"/>
+                                        <ComboBoxItem Content="Solid outline"/>
+                                    </ComboBox>
+                                    <ComboBox Width="104" FontSize="11" SelectedIndex="{Binding FillIndex, Mode=TwoWay}" ToolTip.Tip="Shape fill (colour 2)">
+                                        <ComboBoxItem Content="No fill"/>
+                                        <ComboBoxItem Content="Solid fill"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep"/>
+
+                        <!-- Size -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="Size"/>
+                            <StackPanel Spacing="2" VerticalAlignment="Center" Width="96">
+                                <TextBlock Classes="RibText" HorizontalAlignment="Center"
+                                           Text="{Binding StrokeSize, StringFormat='{}{0:0} px'}"/>
+                                <Slider Minimum="1" Maximum="100" Value="{Binding StrokeSize, Mode=TwoWay}"
+                                        Focusable="False" ToolTip.Tip="Line and brush width ([ and ] to change)"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Fill tolerance: only for the paint bucket -->
+                        <Rectangle Classes="RibSep" IsVisible="{Binding IsFillTool}"/>
+                        <DockPanel Classes="RibGroup" IsVisible="{Binding IsFillTool}">
+                            <TextBlock Classes="RibLabel" Text="Tolerance"/>
+                            <StackPanel Spacing="2" VerticalAlignment="Center" Width="110">
+                                <TextBlock Classes="RibText" HorizontalAlignment="Center"
+                                           Text="{Binding FillTolerance, StringFormat='{}{0:0}%'}"/>
+                                <Slider Minimum="0" Maximum="100" Value="{Binding FillTolerance, Mode=TwoWay}" Focusable="False"
+                                        ToolTip.Tip="How different a colour can be and still be filled. 0% fills only the exact colour, as Paint does."/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Text: only for the text tool, as Paint's contextual Text tab -->
+                        <Rectangle Classes="RibSep" IsVisible="{Binding IsTextTool}"/>
+                        <DockPanel Classes="RibGroup" IsVisible="{Binding IsTextTool}">
+                            <TextBlock Classes="RibLabel" Text="Text"/>
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <ComboBox Width="128" FontSize="11" ItemsSource="{Binding FontFamilies}"
+                                              SelectedItem="{Binding TextFontName, Mode=TwoWay}" Focusable="False"
+                                              ToolTip.Tip="Font family"/>
+                                    <ComboBox Width="64" FontSize="11" ItemsSource="{Binding FontSizes}"
+                                              SelectedItem="{Binding TextSizePt, Mode=TwoWay}" Focusable="False"
+                                              ToolTip.Tip="Font size (points)"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <ToggleButton Classes="Rib" IsChecked="{Binding TextBold, Mode=TwoWay}" ToolTip.Tip="Bold">
+                                        <TextBlock Classes="RibText" Text="B" FontWeight="Bold"/>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="Rib" IsChecked="{Binding TextItalic, Mode=TwoWay}" ToolTip.Tip="Italic">
+                                        <TextBlock Classes="RibText" Text="I" FontStyle="Italic"/>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="Rib" IsChecked="{Binding TextUnderline, Mode=TwoWay}" ToolTip.Tip="Underline">
+                                        <TextBlock Classes="RibText" Text="U" TextDecorations="Underline"/>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="Rib" IsChecked="{Binding TextStrikethrough, Mode=TwoWay}" ToolTip.Tip="Strikethrough">
+                                        <TextBlock Classes="RibText" Text="S" TextDecorations="Strikethrough"/>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="Rib" IsChecked="{Binding TextOpaque, Mode=TwoWay}"
+                                                  ToolTip.Tip="Opaque background: text sits on a block of colour 2">
+                                        <TextBlock Classes="RibText" Text="Opaque"/>
+                                    </ToggleButton>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep"/>
+
+                        <!-- Colours -->
+                        <DockPanel Classes="RibGroup">
+                            <TextBlock Classes="RibLabel" Text="Colours"/>
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <Button Classes="Well" Classes.active="{Binding IsColor1Active}" Click="Color1_Click"
+                                        ToolTip.Tip="Colour 1 (foreground): left-click draws with it">
+                                    <StackPanel Spacing="3">
+                                        <Border Width="30" Height="30" CornerRadius="4" BorderBrush="#555555" BorderThickness="1"
+                                                Background="{Binding PrimaryBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Classes="RibText" FontSize="10" Text="Colour 1" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="Well" Classes.active="{Binding IsColor2Active}" Click="Color2_Click"
+                                        ToolTip.Tip="Colour 2 (background): right-click draws with it, and the eraser uses it">
+                                    <StackPanel Spacing="3">
+                                        <Border Width="24" Height="24" Margin="0,3" CornerRadius="4" BorderBrush="#555555" BorderThickness="1"
+                                                Background="{Binding SecondaryBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Classes="RibText" FontSize="10" Text="Colour 2" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="Rib" Click="SwapColors_Click" ToolTip.Tip="Swap colours (X)" VerticalAlignment="Center">
+                                    <Path Classes="Ico" Data="M 3 7 L 3 4 L 10 4 M 8 2 L 10 4 L 8 6 M 15 11 L 15 14 L 8 14 M 10 12 L 8 14 L 10 16"/>
+                                </Button>
+                                <StackPanel VerticalAlignment="Center">
+                                    <ItemsControl ItemsSource="{Binding Palette}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="10"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:PaletteSwatch">
+                                                <Border Classes="Swatch" Background="{Binding Brush}" ToolTip.Tip="{Binding Name}"
+                                                        PointerPressed="Swatch_PointerPressed"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <ItemsControl ItemsSource="{Binding CustomColors}" Margin="0,3,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="10"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:PaletteSwatch">
+                                                <Border Classes="Swatch" Background="{Binding Brush}" ToolTip.Tip="{Binding Name}"
+                                                        IsHitTestVisible="{Binding !IsEmpty}" Opacity="1"
+                                                        PointerPressed="Swatch_PointerPressed"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <Button Classes="Rib" Click="EditColors_Click" ToolTip.Tip="Edit colours: pick any colour" VerticalAlignment="Center" Padding="6,4">
+                                    <StackPanel Spacing="2">
+                                        <Ellipse Width="18" Height="18" HorizontalAlignment="Center">
+                                            <Ellipse.Fill>
+                                                <ConicGradientBrush>
+                                                    <GradientStop Color="#FF0000" Offset="0"/>
+                                                    <GradientStop Color="#FFFF00" Offset="0.17"/>
+                                                    <GradientStop Color="#00FF00" Offset="0.33"/>
+                                                    <GradientStop Color="#00FFFF" Offset="0.5"/>
+                                                    <GradientStop Color="#0000FF" Offset="0.67"/>
+                                                    <GradientStop Color="#FF00FF" Offset="0.83"/>
+                                                    <GradientStop Color="#FF0000" Offset="1"/>
+                                                </ConicGradientBrush>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <TextBlock Classes="RibText" FontSize="10" Text="Edit colours"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
             <!-- Viewer Area -->
-            <ScrollViewer Grid.Column="0" Name="MainScroll" 
+            <ScrollViewer Grid.Row="1" Name="MainScroll"
                           HorizontalScrollBarVisibility="Hidden" 
                           VerticalScrollBarVisibility="Hidden" 
                           Background="Transparent">
@@ -134,7 +690,7 @@
                             </TransformGroup>
                         </LayoutTransformControl.LayoutTransform>
                         <Panel Name="ZoomContent">
-                            <Image Source="{Binding ImageSource}"
+                            <Image Name="CanvasImage" Source="{Binding ImageSource}"
                                    IsVisible="{Binding ImageSource, Converter={x:Static ObjectConverters.IsNotNull}}"
                                    RenderOptions.BitmapInterpolationMode="HighQuality"
                                    RenderTransformOrigin="50%,50%">
@@ -149,7 +705,27 @@
                                     </Transitions>
                                 </Image.Transitions>
                             </Image>
-                            
+
+                            <!-- Edit mode: marching ants, brush footprint, pixel grid. -->
+                            <views:PaintOverlay Name="PaintOverlay" IsHitTestVisible="False"
+                                                IsVisible="{Binding IsEditMode}" Zoom="{Binding ZoomLevel}"/>
+
+                            <!-- The text tool's box, placed in canvas pixels so it zooms with the picture. -->
+                            <Canvas Name="TextLayer" IsVisible="{Binding IsTextEditing}">
+                                <Border Canvas.Left="{Binding TextX}" Canvas.Top="{Binding TextY}"
+                                        Background="{Binding TextBackgroundBrush}"
+                                        BorderBrush="#9A9A9A" BorderThickness="1">
+                                    <TextBox Name="CanvasTextBox" Classes="CanvasText"
+                                             Text="{Binding TextContent, Mode=TwoWay}"
+                                             Foreground="{Binding PrimaryBrush}"
+                                             CaretBrush="{Binding PrimaryBrush}"
+                                             FontFamily="{Binding TextFontFamily}"
+                                             FontSize="{Binding TextSizePx}"
+                                             FontWeight="{Binding TextFontWeight}"
+                                             FontStyle="{Binding TextFontStyle}"/>
+                                </Border>
+                            </Canvas>
+
                             <TextBlock Text="{Binding ErrorMessage}" 
                                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                        Foreground="#FF5555" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
@@ -163,7 +739,7 @@
             </ScrollViewer>
 
             <!-- Exit button overlaid on the image while in picture frame mode -->
-            <Button Grid.Column="0" Name="ExitFrameButton"
+            <Button Grid.Row="1" Name="ExitFrameButton"
                     IsVisible="{Binding ShowExitFrameButton}"
                     Click="ExitFrame_Click"
                     HorizontalAlignment="Left" VerticalAlignment="Top"
@@ -177,6 +753,7 @@
                     <TextBlock Text="EXIT FRAME" Foreground="#CCCCCC" FontSize="10" FontWeight="ExtraBold" LetterSpacing="1.5" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
+            </Grid>
 
             <!-- GridSplitter for Resizing -->
             <GridSplitter Grid.Column="1" Width="1" Background="#222222" 
@@ -226,9 +803,22 @@
                         </DockPanel>
 
                         <!-- Edit View -->
+                        <!-- The buttons dock first so they always keep their place; the sliders take what is left and scroll. -->
                         <DockPanel IsVisible="{Binding IsEditMode}">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" DockPanel.Dock="Top">
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,16,0,0" Spacing="10">
+                                <Button Classes="Modern" Content="Save Changes" Click="SaveEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="#2A2A2A"/>
+                                <Button Classes="Modern" Content="Save As..." Click="SaveAsEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                <Button Classes="Modern" Content="Discard" Click="DiscardEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Foreground="#FF5555" Background="Transparent" BorderBrush="#442222"/>
+                            </StackPanel>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Spacing="20">
+                                    <!-- Applied over the painting as a final pass, and baked in on save. -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="ADJUSTMENTS" Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" LetterSpacing="1" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Classes="Icon" Content="Reset" FontSize="11" Padding="8,3"
+                                                Click="ResetAdjustments_Click" IsEnabled="{Binding IsAdjusted}"
+                                                ToolTip.Tip="Put every slider back and clear the filter"/>
+                                    </Grid>
                                     <!-- HSL Adjustments -->
                                     <StackPanel Spacing="8">
                                         <TextBlock Text="BRIGHTNESS" Foreground="#888888" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"/>
@@ -268,11 +858,7 @@
                                 </StackPanel>
                             </ScrollViewer>
 
-                            <StackPanel DockPanel.Dock="Bottom" Margin="0,20,0,0" Spacing="10">
-                                <Button Classes="Modern" Content="Save Changes" Click="SaveEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="#2A2A2A"/>
-                                <Button Classes="Modern" Content="Save As..." Click="SaveAsEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                                <Button Classes="Modern" Content="Discard" Click="DiscardEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Foreground="#FF5555" Background="Transparent" BorderBrush="#442222"/>
-                            </StackPanel>
+
                         </DockPanel>
                     </Panel>
                 </Grid>
@@ -281,6 +867,44 @@
 
         <!-- Bottom Area -->
         <Border Grid.Row="2" Name="BottomBar" Background="#0A0A0A" BorderBrush="#222222" BorderThickness="0,1,0,0" IsVisible="{Binding IsChromeVisible}">
+            <Panel>
+            <!-- Edit mode: Paint's status bar: pointer, selection and canvas size, zoom. -->
+            <Grid Name="EditStatusBar" IsVisible="{Binding IsEditMode}" Margin="14,6"
+                  ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" MinWidth="120">
+                    <Path Classes="StatusIco" Data="M 7 0 L 7 14 M 0 7 L 14 7"/>
+                    <TextBlock Classes="StatusText" Text="{Binding CursorText}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" MinWidth="120">
+                    <Path Classes="StatusIco" StrokeDashArray="2,1.5" Data="M 1.5 2.5 L 12.5 2.5 L 12.5 11.5 L 1.5 11.5 Z"/>
+                    <TextBlock Classes="StatusText" Text="{Binding SelectionText}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" MinWidth="130">
+                    <Path Classes="StatusIco" Data="M 1.5 1.5 L 12.5 1.5 L 12.5 12.5 L 1.5 12.5 Z M 1.5 9 L 5 6 L 8 9 L 10 7 L 12.5 9.5"/>
+                    <TextBlock Classes="StatusText" Text="{Binding CanvasSizeText}"/>
+                </StackPanel>
+                <TextBlock Grid.Column="3" Classes="StatusText" Foreground="#777777" Margin="10,0"
+                           Text="{Binding ToolHint}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="4" Name="EditStatusText" Text="{Binding StatusMessage}"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Foreground="#6FD08C" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4">
+                    <ToggleButton Classes="Rib" IsChecked="{Binding ShowGridlines, Mode=TwoWay}" MinHeight="24" Padding="4,2"
+                                  ToolTip.Tip="Gridlines (Ctrl+G) -- shown from 400% zoom">
+                        <Path Classes="StatusIco" Margin="0" Data="M 0.5 4.5 L 13.5 4.5 M 0.5 9.5 L 13.5 9.5 M 4.5 0.5 L 4.5 13.5 M 9.5 0.5 L 9.5 13.5"/>
+                    </ToggleButton>
+                    <Button Classes="Rib" Click="ZoomOut_Click" MinHeight="24" Padding="4,2" ToolTip.Tip="Zoom out (Ctrl+-)">
+                        <Path Classes="StatusIco" Margin="0" Data="M 2 7 L 12 7"/>
+                    </Button>
+                    <Button Classes="Rib" Click="ResetZoom_Click" MinHeight="24" Padding="6,2" MinWidth="56" ToolTip.Tip="Fit to window (Ctrl+0)">
+                        <TextBlock Classes="StatusText" Foreground="White" Text="{Binding ZoomLevel, StringFormat=\{0:P0\}}"/>
+                    </Button>
+                    <Button Classes="Rib" Click="ZoomIn_Click" MinHeight="24" Padding="4,2" ToolTip.Tip="Zoom in (Ctrl++)">
+                        <Path Classes="StatusIco" Margin="0" Data="M 2 7 L 12 7 M 7 2 L 7 12"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
             <StackPanel IsVisible="{Binding IsViewMode}">
                 <!-- Chevron Toggle -->
                 <Button HorizontalAlignment="Center" 
@@ -347,6 +971,7 @@
                     </Border>
                 </StackPanel>
             </StackPanel>
+            </Panel>
         </Border>
     </Grid>
 </Window>

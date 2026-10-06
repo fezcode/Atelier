@@ -55,11 +55,24 @@ namespace Atelier.Views
 
         // ---- Clipboard -------------------------------------------------------------
 
-        public void Copy_Click(object? sender, RoutedEventArgs e) => ViewModel?.CopyToClipboard();
+        // In edit mode the clipboard works on the canvas, as in Paint: copy takes the
+        // selection (or the whole edited picture) and paste drops in a movable selection.
+
+        public void Copy_Click(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is not { } vm) return;
+            if (vm.IsEditMode) vm.CopySelectionToClipboard();
+            else vm.CopyToClipboard();
+        }
 
         public async void Paste_Click(object? sender, RoutedEventArgs e)
         {
             if (ViewModel is not { } vm) return;
+            if (vm.IsEditMode)
+            {
+                PasteIntoCanvas();
+                return;
+            }
             if (!await EnsureSavedAsync()) return;
 
             if (await vm.PasteFromClipboardAsync())
@@ -71,6 +84,14 @@ namespace Atelier.Views
         public async void Delete_Click(object? sender, RoutedEventArgs e)
         {
             if (ViewModel is not { } vm || !vm.HasImage) return;
+
+            // While editing, Delete belongs to the selection. Binning the file out from
+            // under an open edit would be a nasty surprise for a key Paint users press often.
+            if (vm.IsEditMode)
+            {
+                vm.DeleteSelection();
+                return;
+            }
 
             // No confirmation: the Recycle Bin is the undo, and a prompt on every cull
             // is a click people learn to dismiss without reading.
@@ -101,11 +122,12 @@ namespace Atelier.Views
         {
             if (ViewModel is not { } vm || !vm.IsDirty) return true;
 
-            switch (await PromptUnsavedAsync(Path.GetFileName(vm.ImagePath ?? "this image")))
+            switch (await PromptUnsavedAsync(Path.GetFileName(vm.ImagePath ?? "this image"), vm.IsEditMode))
             {
                 case UnsavedChoice.Save:
                     await vm.SaveInPlaceAsync();
-                    return true;
+                    // A failed save leaves the edits in place; carrying on would lose them.
+                    return vm.ErrorMessage == null;
                 case UnsavedChoice.Discard:
                     return true;
                 default:
@@ -146,7 +168,7 @@ namespace Atelier.Views
         private static void SweepPasteScratch() => Task.Run(() =>
             ClipboardImage.SweepPasteFolder(ClipboardImage.PasteFolder, DateTime.UtcNow, TimeSpan.FromDays(7)));
 
-        private async Task<UnsavedChoice> PromptUnsavedAsync(string fileName)
+        private async Task<UnsavedChoice> PromptUnsavedAsync(string fileName, bool edited = false)
         {
             var choice = UnsavedChoice.Cancel;
 
@@ -154,14 +176,16 @@ namespace Atelier.Views
             var discard = DialogButton("Discard");
             var cancel = DialogButton("Cancel");
 
-            var dialog = Dialog("Unsaved rotation", 420, 210, new StackPanel
+            var dialog = Dialog(edited ? "Unsaved changes" : "Unsaved rotation", 420, 210, new StackPanel
             {
                 Spacing = 18,
                 Children =
                 {
                     new TextBlock
                     {
-                        Text = $"{fileName} has been rotated but not saved.",
+                        Text = edited
+                            ? $"{fileName} has edits that have not been saved."
+                            : $"{fileName} has been rotated but not saved.",
                         Foreground = Brushes.White,
                         FontSize = 15,
                         FontWeight = FontWeight.SemiBold,
@@ -169,7 +193,9 @@ namespace Atelier.Views
                     },
                     new TextBlock
                     {
-                        Text = "Saving rewrites the file with the turn applied.",
+                        Text = edited
+                            ? "Saving writes them into the file."
+                            : "Saving rewrites the file with the turn applied.",
                         Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")),
                         FontSize = 13,
                         TextWrapping = TextWrapping.Wrap,

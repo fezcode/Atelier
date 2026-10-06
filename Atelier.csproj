@@ -4,13 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <!-- Single source of truth for the version: the About dialog reads it back off the
          assembly, and forge.toml must be kept in step with it. -->
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <Company>Fezcode</Company>
     <Product>Atelier</Product>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\atelier-icon.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- The paint engine walks pixel rows directly (flood fill, colour replace, the
+         copy into the on-screen bitmap); going through spans of spans was 5-10x slower. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- Startup performance. ReadyToRun precompiles IL to native so the bulk of the
@@ -47,6 +50,10 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.1.0" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.0" />
     <PackageReference Include="Avalonia.Svg.Skia" Version="11.1.0" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.1.0" />
+    <!-- Edit mode paints with Skia directly. Pinned to the version Avalonia.Skia 11.1.0
+         already brings in, so this adds a direct reference rather than a second copy. -->
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0" />
     <PackageReference Include="Avalonia.Diagnostics" Version="11.1.0">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
