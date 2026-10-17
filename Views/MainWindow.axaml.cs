@@ -264,17 +264,9 @@ namespace Atelier.Views
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
                 Title = "Save Image As",
+                SuggestedFileName = SuggestedSaveName(),
                 DefaultExtension = "png",
-                FileTypeChoices = new[]
-                {
-                    new FilePickerFileType("PNG Image") { Patterns = new[] { "*.png" } },
-                    new FilePickerFileType("JPEG Image") { Patterns = new[] { "*.jpg", "*.jpeg" } },
-                    new FilePickerFileType("WebP Image") { Patterns = new[] { "*.webp" } },
-                    new FilePickerFileType("BMP Image") { Patterns = new[] { "*.bmp" } },
-                    new FilePickerFileType("Icon File") { Patterns = new[] { "*.ico" } },
-                    new FilePickerFileType("HEIC Image") { Patterns = new[] { "*.heic", "*.heif" } },
-                    new FilePickerFileType("AVIF Image") { Patterns = new[] { "*.avif" } }
-                }
+                FileTypeChoices = SaveFileTypes
             });
 
             if (file != null)
@@ -852,17 +844,9 @@ namespace Atelier.Views
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
                 Title = "Save Edited Image As",
+                SuggestedFileName = SuggestedSaveName(),
                 DefaultExtension = "png",
-                FileTypeChoices = new[]
-                {
-                    new FilePickerFileType("PNG Image") { Patterns = new[] { "*.png" } },
-                    new FilePickerFileType("JPEG Image") { Patterns = new[] { "*.jpg", "*.jpeg" } },
-                    new FilePickerFileType("WebP Image") { Patterns = new[] { "*.webp" } },
-                    new FilePickerFileType("BMP Image") { Patterns = new[] { "*.bmp" } },
-                    new FilePickerFileType("GIF Image") { Patterns = new[] { "*.gif" } },
-                    new FilePickerFileType("Icon File") { Patterns = new[] { "*.ico" } },
-                    new FilePickerFileType("AVIF Image") { Patterns = new[] { "*.avif" } }
-                }
+                FileTypeChoices = SaveFileTypes
             });
 
             if (file != null && DataContext is MainWindowViewModel vm)

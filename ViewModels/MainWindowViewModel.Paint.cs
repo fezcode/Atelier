@@ -507,6 +507,13 @@ namespace Atelier.ViewModels
             try
             {
                 await Task.Run(() => WriteEdited(pixels, width, height, settings, source, target));
+                if (IsExportOnly(target))
+                {
+                    // Nothing here can open a PDF again, so reloading would swap the edit for
+                    // an error. The edit stays open instead, still unsaved to its own file.
+                    StatusMessage = $"Exported {Path.GetFileName(target)}";
+                    return;
+                }
                 // Loading the result ends the edit session and puts the saved file on screen.
                 await LoadImageAsync(target);
                 if (ErrorMessage == null) StatusMessage = "Saved";
@@ -516,6 +523,13 @@ namespace Atelier.ViewModels
                 ErrorMessage = $"Failed to save: {ex.Message}";
             }
         }
+
+        /// <summary>
+        /// Formats Save As can write but Atelier cannot open: reading PDF and PostScript
+        /// back needs Ghostscript, which is not bundled.
+        /// </summary>
+        internal static bool IsExportOnly(string path) =>
+            Path.GetExtension(path).ToLowerInvariant() is ".pdf" or ".eps" or ".ps";
 
         private static void WriteEdited(byte[] pixels, int width, int height, Adjustments settings, string? source, string target)
         {
@@ -550,6 +564,11 @@ namespace Atelier.ViewModels
 
             var info = MagickFormatInfo.Create(new FileInfo(target));
             image.Format = info?.Format ?? MagickFormat.Png;
+
+            // Magick's own defaults for the other lossy formats sit well below what the
+            // JPEG path keeps, so they get the same quality rather than looking worse.
+            if (image.Format is MagickFormat.WebP or MagickFormat.Avif or MagickFormat.Jxl)
+                image.Quality = quality;
 
             if (image.Format is MagickFormat.Jpeg or MagickFormat.Jpg)
             {

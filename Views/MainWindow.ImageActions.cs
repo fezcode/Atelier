@@ -8,6 +8,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
 namespace Atelier.Views
@@ -108,6 +109,157 @@ namespace Atelier.Views
 
             await vm.RenameCurrentAsync(name);
         }
+
+        // ---- Remove metadata --------------------------------------------------------
+
+        private enum StripChoice { Overwrite, Copy, Cancel }
+
+        /// <summary>
+        /// File &gt; Remove Metadata, and the button under the metadata pane. Asks first:
+        /// unlike a delete there is no Recycle Bin to undo an overwrite from, so the
+        /// prompt also offers to write a clean copy instead.
+        /// </summary>
+        public async void RemoveMetadata_Click(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is not { CanRemoveMetadata: true } vm || vm.ImagePath is not { } path) return;
+            // A pending rotation would be lost when the cleaned file is reloaded.
+            if (!await EnsureSavedAsync()) return;
+
+            string? destination;
+            switch (await PromptStripAsync(Path.GetFileName(path)))
+            {
+                case StripChoice.Overwrite:
+                    destination = null;
+                    break;
+                case StripChoice.Copy:
+                    destination = await PickCleanCopyAsync(path);
+                    if (destination == null) return;
+                    break;
+                default:
+                    return;
+            }
+
+            if (await vm.RemoveMetadataAsync(destination))
+                Dispatcher.UIThread.Post(FitToView, DispatcherPriority.Loaded);
+        }
+
+        private async Task<string?> PickCleanCopyAsync(string path)
+        {
+            var topLevel = GetTopLevel(this);
+            if (topLevel == null) return null;
+
+            string ext = Path.GetExtension(path);
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Save Copy Without Metadata",
+                SuggestedFileName = Path.GetFileNameWithoutExtension(path) + "-clean" + ext,
+                DefaultExtension = ext.TrimStart('.'),
+                // The copy keeps the original's format: the point is to change nothing but
+                // the metadata, and switching format would re-encode the pixels.
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType($"{ext.TrimStart('.').ToUpperInvariant()} Image") { Patterns = new[] { "*" + ext } },
+                },
+            });
+            return file?.Path.LocalPath;
+        }
+
+        private async Task<StripChoice> PromptStripAsync(string fileName)
+        {
+            var choice = StripChoice.Cancel;
+
+            var remove = DialogButton("Remove", isDefault: true);
+            var copy = DialogButton("Save a Copy...");
+            var cancel = DialogButton("Cancel");
+
+            var dialog = Dialog("Remove metadata", 480, 250, new StackPanel
+            {
+                Spacing = 18,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = $"Remove all metadata from {fileName}?",
+                        Foreground = Brushes.White,
+                        FontSize = 15,
+                        FontWeight = FontWeight.SemiBold,
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    new TextBlock
+                    {
+                        Text = "EXIF (camera, dates, GPS location), XMP, IPTC, comments and Content " +
+                               "Credentials (C2PA) are removed from the file. The colour profile and " +
+                               "orientation are kept. This cannot be undone.",
+                        Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")),
+                        FontSize = 13,
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 10,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Children = { cancel, copy, remove },
+                    },
+                },
+            });
+
+            remove.Click += (_, _) => { choice = StripChoice.Overwrite; dialog.Close(); };
+            copy.Click += (_, _) => { choice = StripChoice.Copy; dialog.Close(); };
+            cancel.Click += (_, _) => { choice = StripChoice.Cancel; dialog.Close(); };
+            dialog.KeyDown += (_, e) => { if (e.Key == Key.Escape) dialog.Close(); };
+
+            await dialog.ShowDialog(this);
+            return choice;
+        }
+
+        // ---- Save As formats --------------------------------------------------------
+
+        /// <summary>
+        /// Everything this build of Magick can write and read back, most common first.
+        /// Each one was checked by writing a test image: HEIC is missing because there is
+        /// no HEIC encoder in the bundled Magick, and PDF/EPS can be written but need
+        /// Ghostscript to be opened again -- see <see cref="MainWindowViewModel.IsExportOnly"/>.
+        /// </summary>
+        internal static readonly FilePickerFileType[] SaveFileTypes =
+        {
+            new("PNG Image") { Patterns = new[] { "*.png" } },
+            new("JPEG Image") { Patterns = new[] { "*.jpg", "*.jpeg" } },
+            new("WebP Image") { Patterns = new[] { "*.webp" } },
+            new("AVIF Image") { Patterns = new[] { "*.avif" } },
+            new("JPEG XL Image") { Patterns = new[] { "*.jxl" } },
+            new("TIFF Image") { Patterns = new[] { "*.tif", "*.tiff" } },
+            new("BMP Image") { Patterns = new[] { "*.bmp" } },
+            new("GIF Image") { Patterns = new[] { "*.gif" } },
+            new("Icon File") { Patterns = new[] { "*.ico" } },
+            new("JPEG 2000 Image") { Patterns = new[] { "*.jp2" } },
+            new("QOI Image") { Patterns = new[] { "*.qoi" } },
+            new("Photoshop Document") { Patterns = new[] { "*.psd" } },
+            new("Targa Image") { Patterns = new[] { "*.tga" } },
+            new("DirectDraw Surface") { Patterns = new[] { "*.dds" } },
+            new("OpenEXR Image") { Patterns = new[] { "*.exr" } },
+            new("Radiance HDR Image") { Patterns = new[] { "*.hdr" } },
+            new("PDF Document") { Patterns = new[] { "*.pdf" } },
+            new("Encapsulated PostScript") { Patterns = new[] { "*.eps" } },
+            new("Portable Pixmap (PPM)") { Patterns = new[] { "*.ppm" } },
+            new("Portable Graymap (PGM)") { Patterns = new[] { "*.pgm" } },
+            new("Portable Bitmap (PBM)") { Patterns = new[] { "*.pbm" } },
+            new("Portable Arbitrary Map (PAM)") { Patterns = new[] { "*.pam" } },
+            new("Portable Float Map (PFM)") { Patterns = new[] { "*.pfm" } },
+            new("PCX Image") { Patterns = new[] { "*.pcx" } },
+            new("SGI Image") { Patterns = new[] { "*.sgi" } },
+            new("Sun Raster Image") { Patterns = new[] { "*.sun" } },
+            new("X PixMap (XPM)") { Patterns = new[] { "*.xpm" } },
+            new("X BitMap (XBM)") { Patterns = new[] { "*.xbm" } },
+            new("Wireless Bitmap (WBMP)") { Patterns = new[] { "*.wbmp" } },
+            new("FITS Image") { Patterns = new[] { "*.fits" } },
+            new("Farbfeld Image") { Patterns = new[] { "*.ff" } },
+            new("Magick Image File (MIFF)") { Patterns = new[] { "*.miff" } },
+        };
+
+        /// <summary>The open picture's name without its extension, so the picker's type decides it.</summary>
+        private string? SuggestedSaveName() =>
+            ViewModel?.ImagePath is { } path ? Path.GetFileNameWithoutExtension(path) : null;
 
         // ---- The unsaved-rotation guard --------------------------------------------
 

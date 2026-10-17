@@ -14,10 +14,29 @@ using ReactiveUI;
 
 namespace Atelier.ViewModels
 {
+    public enum MetadataKind { Field, Header, Subheader }
+
+    /// <summary>
+    /// One row of the metadata pane. Headers start a section (File, EXIF, Content
+    /// Credentials) and may carry a muted note in Value -- "None in this file", say;
+    /// subheaders split a section into its EXIF directories.
+    /// </summary>
     public class MetadataItem
     {
         public string Label { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
+        public MetadataKind Kind { get; set; } = MetadataKind.Field;
+
+        public bool IsField => Kind == MetadataKind.Field;
+        public bool IsHeader => Kind == MetadataKind.Header;
+        public bool IsSubheader => Kind == MetadataKind.Subheader;
+        public bool HasNote => Kind != MetadataKind.Field && Value.Length > 0;
+
+        public static MetadataItem Header(string label, string note = "") =>
+            new() { Label = label, Value = note, Kind = MetadataKind.Header };
+
+        public static MetadataItem Subheader(string label) =>
+            new() { Label = label.ToUpperInvariant(), Kind = MetadataKind.Subheader };
     }
 
     public partial class MainWindowViewModel : ViewModelBase
@@ -40,6 +59,7 @@ namespace Atelier.ViewModels
                 this.RaisePropertyChanged(nameof(CanSetWallpaper));
                 this.RaisePropertyChanged(nameof(CanOpenInPaint));
                 this.RaisePropertyChanged(nameof(CanEditImage));
+                this.RaisePropertyChanged(nameof(CanRemoveMetadata));
                 this.RaisePropertyChanged(nameof(IsDirty));
             }
         }
@@ -317,8 +337,28 @@ namespace Atelier.ViewModels
             public int AnimationFrames;
             public bool AnimationTooLarge;
             public List<MetadataItem> Metadata = new();
+            public bool HasRemovableMetadata;
             public List<string> Siblings = new();
         }
+
+        private bool _hasRemovableMetadata;
+        /// <summary>True when the open file carries EXIF, XMP, IPTC, comments or C2PA.</summary>
+        public bool HasRemovableMetadata
+        {
+            get => _hasRemovableMetadata;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _hasRemovableMetadata, value);
+                this.RaisePropertyChanged(nameof(CanRemoveMetadata));
+            }
+        }
+
+        /// <summary>
+        /// Remove Metadata works on the file on disk, so it is shut off while editing --
+        /// the edit is not in the file yet -- and for formats it cannot rewrite.
+        /// </summary>
+        public bool CanRemoveMetadata =>
+            HasRemovableMetadata && IsViewMode && ImagePath != null && MetadataStripper.CanStrip(ImagePath);
 
         private AnimatedImage? _animation;
         private int _frameIndex;
@@ -377,6 +417,7 @@ namespace Atelier.ViewModels
                 _storedOrientation = ImageOrientation.Identity;
                 Orientation = ImageOrientation.Identity;
                 MetadataItems = new ObservableCollection<MetadataItem>();
+                HasRemovableMetadata = false;
 
                 // Decoding, EXIF extraction and the directory scan are all file/CPU bound.
                 // They used to run on the UI thread, freezing the window for the whole load.
@@ -413,6 +454,7 @@ namespace Atelier.ViewModels
                 // One assignment instead of one CollectionChanged per tag -- a photo with a
                 // few hundred EXIF tags used to trigger a layout pass for every one of them.
                 MetadataItems = new ObservableCollection<MetadataItem>(loaded.Metadata);
+                HasRemovableMetadata = loaded.HasRemovableMetadata;
 
                 _fileList = loaded.Siblings;
                 _currentIndex = _fileList.FindIndex(
@@ -443,10 +485,13 @@ namespace Atelier.ViewModels
                     result.Width = result.Svg.Picture.CullRect.Width;
                     result.Height = result.Svg.Picture.CullRect.Height;
                 }
+                result.Metadata.Add(MetadataItem.Header("File"));
                 AddBasicMetadata(result.Metadata, path, "SVG Vector");
             }
-            else if (ext == ".heic" || ext == ".heif" || ext == ".avif")
+            else if (ext == ".heic" || ext == ".heif" || ext == ".avif" || !TryDecodeNatively(path, result))
             {
+                // The HEIF family, and everything Avalonia's decoder does not know (TIFF,
+                // PSD, JPEG XL and the rest Save As can write), go through Magick.
                 using var image = new MagickImage(path);
                 // The HEIF family carries its rotation in the container, and Magick is the
                 // only thing here that can read it -- Avalonia is handed flat PNG bytes and
@@ -455,24 +500,25 @@ namespace Atelier.ViewModels
                 image.AutoOrient();
                 result.Width = image.Width;
                 result.Height = image.Height;
-                string formatLabel = ext == ".avif" ? "AVIF" : "HEIC";
+                string formatLabel = ext switch
+                {
+                    ".avif" => "AVIF",
+                    ".heic" or ".heif" => "HEIC",
+                    _ => ext.ToUpperInvariant().TrimStart('.'),
+                };
+                result.Metadata.Add(MetadataItem.Header("File"));
                 AddBasicMetadata(result.Metadata, path, $"{formatLabel} {image.Width}x{image.Height}");
 
                 using var ms = new MemoryStream();
                 image.Write(ms, MagickFormat.Png);
                 ms.Position = 0;
                 result.Bitmap = new Bitmap(ms);
-                AddExifMetadata(result.Metadata, path);
             }
             else
             {
-                var bitmap = new Bitmap(path);
-                result.Bitmap = bitmap;
-                result.Width = bitmap.Size.Width;
-                result.Height = bitmap.Size.Height;
+                result.Metadata.Add(MetadataItem.Header("File"));
                 AddBasicMetadata(result.Metadata, path,
-                    $"{(int)bitmap.Size.Width}x{(int)bitmap.Size.Height} {ext.ToUpperInvariant().TrimStart('.')}");
-                AddExifMetadata(result.Metadata, path);
+                    $"{(int)result.Width}x{(int)result.Height} {ext.ToUpperInvariant().TrimStart('.')}");
                 // Avalonia's decoder hands back the sensor frame and ignores the orientation
                 // tag entirely, so a portrait phone photo arrives on its side. The view turns
                 // it; see ImageOrientation.
@@ -497,8 +543,37 @@ namespace Atelier.ViewModels
                 });
             }
 
+            if (ext != ".svg")
+            {
+                bool hasExif = AddExifMetadata(result.Metadata, path, out bool otherMetadata);
+                var credentials = C2pa.Read(path);
+                AddC2paMetadata(result.Metadata, credentials);
+                result.HasRemovableMetadata = hasExif || otherMetadata || C2pa.IsPresent(path);
+            }
+
             result.Siblings = ScanSiblings(path);
             return result;
+        }
+
+        /// <summary>
+        /// Avalonia's own decoder, for the formats it knows. False, rather than a throw,
+        /// for anything it cannot read, so the caller can hand the file to Magick.
+        /// </summary>
+        private static bool TryDecodeNatively(string path, LoadedImage result)
+        {
+            Bitmap bitmap;
+            try
+            {
+                bitmap = new Bitmap(path);
+            }
+            catch (Exception) when (File.Exists(path))
+            {
+                return false;
+            }
+            result.Bitmap = bitmap;
+            result.Width = bitmap.Size.Width;
+            result.Height = bitmap.Size.Height;
+            return true;
         }
 
         /// <summary>
@@ -689,6 +764,35 @@ namespace Atelier.ViewModels
             }
         }
 
+        /// <summary>
+        /// Strips EXIF, XMP, IPTC, comments and C2PA from the open picture -- in place, or
+        /// into <paramref name="destination"/> -- and shows the result, so the pane's
+        /// "None in this file" is read back off the disk rather than assumed.
+        /// </summary>
+        public async Task<bool> RemoveMetadataAsync(string? destination = null)
+        {
+            if (!CanRemoveMetadata) return false;
+
+            string source = ImagePath!;
+            string target = destination ?? source;
+            try
+            {
+                await Task.Run(() => MetadataStripper.Strip(source, target));
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Could not remove metadata: {ex.Message}";
+                return false;
+            }
+
+            await LoadImageAsync(target);
+            if (ErrorMessage != null) return false;
+            StatusMessage = destination == null || string.Equals(destination, source, StringComparison.OrdinalIgnoreCase)
+                ? "Metadata removed"
+                : $"Saved {Path.GetFileName(target)} without metadata";
+            return true;
+        }
+
         private static void AddBasicMetadata(List<MetadataItem> items, string path, string typeInfo)
         {
             var info = new FileInfo(path);
@@ -731,21 +835,70 @@ namespace Atelier.ViewModels
             return ImageOrientation.Identity;
         }
 
-        private static void AddExifMetadata(List<MetadataItem> items, string path)
+        /// <summary>
+        /// The EXIF section, one subheader per directory. Returns whether there was any
+        /// EXIF; <paramref name="otherMetadata"/> reports XMP, IPTC and text comments,
+        /// which the pane does not list but Remove Metadata still clears.
+        /// </summary>
+        private static bool AddExifMetadata(List<MetadataItem> items, string path, out bool otherMetadata)
         {
+            otherMetadata = false;
+            bool orientationOnly = false;
+            var section = new List<MetadataItem>();
             try
             {
                 var directories = ImageMetadataReader.ReadMetadata(path);
-                foreach (var directory in directories)
+                otherMetadata = directories.Any(d =>
+                    d is MetadataExtractor.Formats.Xmp.XmpDirectory
+                      or MetadataExtractor.Formats.Iptc.IptcDirectory
+                      or MetadataExtractor.Formats.Jpeg.JpegCommentDirectory
+                    || d.Name is "PNG-tEXt" or "PNG-iTXt" or "PNG-zTXt" or "PNG-tIME");
+
+                // The thumbnail directory is offsets and a compression code -- nothing a
+                // person reads.
+                var exifDirectories = directories.OfType<ExifDirectoryBase>()
+                    .Where(d => d is not ExifThumbnailDirectory && d.TagCount > 0).ToList();
+                orientationOnly = exifDirectories.Count == 1 && exifDirectories[0] is ExifIfd0Directory ifd0 &&
+                                  ifd0.TagCount == 1 && ifd0.ContainsTag(ExifDirectoryBase.TagOrientation);
+
+                foreach (var directory in exifDirectories)
                 {
-                    if (!directory.Name.Contains("Exif") && directory.Name != "JPEG" && directory.Name != "PNG")
-                        continue;
+
+                    section.Add(MetadataItem.Subheader(directory switch
+                    {
+                        ExifIfd0Directory => "Camera & image",
+                        ExifSubIfdDirectory => "Capture",
+                        GpsDirectory => "GPS",
+                        ExifInteropDirectory => "Interoperability",
+                        _ => directory.Name,
+                    }));
+
+                    if (directory is GpsDirectory gps && gps.TryGetGeoLocation(out var location))
+                        section.Add(new MetadataItem
+                        {
+                            Label = "Coordinates",
+                            Value = $"{location.Latitude:0.######}, {location.Longitude:0.######}",
+                        });
 
                     foreach (var tag in directory.Tags)
-                        items.Add(new MetadataItem { Label = tag.Name, Value = tag.Description ?? "" });
+                        section.Add(new MetadataItem { Label = tag.Name, Value = tag.Description ?? "" });
                 }
             }
             catch { }
+
+            items.Add(MetadataItem.Header("EXIF", section.Count == 0 ? "None in this file" : ""));
+            items.AddRange(section);
+            // A lone Orientation tag is what Remove Metadata leaves behind on purpose, so
+            // it does not keep the action lit.
+            return section.Count(i => i.IsField) > (orientationOnly ? 1 : 0);
+        }
+
+        private static void AddC2paMetadata(List<MetadataItem> items, List<C2pa.Field>? credentials)
+        {
+            items.Add(MetadataItem.Header("Content Credentials (C2PA)", credentials == null ? "None in this file" : ""));
+            if (credentials == null) return;
+            foreach (var field in credentials)
+                items.Add(new MetadataItem { Label = field.Label, Value = field.Value });
         }
 
         private bool _isEditMode;
@@ -762,6 +915,7 @@ namespace Atelier.ViewModels
                 this.RaisePropertyChanged(nameof(CanSetWallpaper));
                 this.RaisePropertyChanged(nameof(CanOpenInPaint));
                 this.RaisePropertyChanged(nameof(CanEditImage));
+                this.RaisePropertyChanged(nameof(CanRemoveMetadata));
                 this.RaisePropertyChanged(nameof(HasEditChanges));
                 this.RaisePropertyChanged(nameof(IsDirty));
                 this.RaisePropertyChanged(nameof(CanUndo));
@@ -830,6 +984,7 @@ namespace Atelier.ViewModels
             _storedOrientation = ImageOrientation.Identity;
             Orientation = ImageOrientation.Identity;
             MetadataItems = new ObservableCollection<MetadataItem>();
+            HasRemovableMetadata = false;
             _fileList = new List<string>();
             _currentIndex = -1;
 

@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <!-- Single source of truth for the version: the About dialog reads it back off the
          assembly, and forge.toml must be kept in step with it. -->
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Company>Fezcode</Company>
     <Product>Atelier</Product>
     <Nullable>enable</Nullable>
@@ -62,6 +62,8 @@
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.16.0" />
     <PackageReference Include="MetadataExtractor" Version="2.9.3" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <PackageReference Include="System.Formats.Cbor" Version="8.0.1" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
     <!-- Pulled in transitively by Avalonia for Linux/DBus. Avalonia 11.1.0 asks for
          0.16.0, which carries GHSA-xrw6-gwf8-vvr9 (High). Atelier only ships win-x64
          so the code never runs, but pinning it here keeps the audit clean. -->

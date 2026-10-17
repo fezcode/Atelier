@@ -13,7 +13,7 @@
         TransparencyLevelHint="Mica, AcrylicBlur"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="-1"
-        FontFamily="avares://Atelier/Assets/Exo-VariableFont_wght.ttf#Exo, Segoe UI, Arial, sans-serif"
+        FontFamily="Segoe UI, Arial, sans-serif"
         DragDrop.AllowDrop="True">
 
     <Design.DataContext>
@@ -243,6 +243,9 @@
                         <MenuItem Header="_Delete" Click="Delete_Click" InputGesture="Delete"
                                   IsEnabled="{Binding HasImage}"
                                   ToolTip.Tip="Move to the Recycle Bin"/>
+                        <MenuItem Header="Remove _Metadata..." Click="RemoveMetadata_Click"
+                                  IsEnabled="{Binding CanRemoveMetadata}"
+                                  ToolTip.Tip="Strip EXIF, XMP, IPTC and Content Credentials (C2PA)"/>
                         <Separator/>
                         <MenuItem Header="File _Associations..." Click="FileAssociations_Click"/>
                         <Separator/>
@@ -787,15 +790,36 @@
                     <Panel Grid.Row="1" Margin="15">
                         <!-- Metadata View -->
                         <DockPanel IsVisible="{Binding IsViewMode}">
+                            <!-- Docked first, like the editor's buttons, so it stays put while the list scrolls. -->
+                            <Button DockPanel.Dock="Bottom" Name="RemoveMetadataButton" Classes="Modern"
+                                    Content="Remove Metadata..." Click="RemoveMetadata_Click"
+                                    IsEnabled="{Binding CanRemoveMetadata}"
+                                    IsVisible="{Binding HasImage}"
+                                    Margin="0,12,0,0"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    Foreground="#FF7777" Background="Transparent" BorderBrush="#442222"
+                                    ToolTip.Tip="Strip EXIF, XMP, IPTC and Content Credentials (C2PA) from the file"/>
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding MetadataItems}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <StackPanel Margin="0,0,0,14">
-                                                <TextBlock Text="{Binding Label}" Foreground="#888888" FontSize="11" FontWeight="SemiBold" TextAlignment="Left" LetterSpacing="0.5"/>
-                                                <TextBlock Text="{Binding Value}" Foreground="#FFFFFF" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,5,0,0"/>
-                                                <Rectangle Height="1" Fill="#1A1A1A" Margin="0,10,0,0"/>
-                                            </StackPanel>
+                                            <Panel>
+                                                <!-- A section: File, EXIF, Content Credentials. -->
+                                                <StackPanel IsVisible="{Binding IsHeader}" Margin="0,6,0,14">
+                                                    <TextBlock Text="{Binding Label}" Foreground="#5AA2FF" FontSize="11" FontWeight="Bold" LetterSpacing="1.5"/>
+                                                    <TextBlock Text="{Binding Value}" IsVisible="{Binding HasNote}" Foreground="#666666" FontSize="12" FontStyle="Italic" Margin="0,6,0,0"/>
+                                                    <Rectangle Height="1" Fill="#2A2A2A" Margin="0,8,0,0"/>
+                                                </StackPanel>
+                                                <!-- An EXIF directory inside its section. -->
+                                                <TextBlock IsVisible="{Binding IsSubheader}" Text="{Binding Label}"
+                                                           Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" LetterSpacing="1"
+                                                           Margin="0,2,0,12"/>
+                                                <StackPanel IsVisible="{Binding IsField}" Margin="0,0,0,14">
+                                                    <TextBlock Text="{Binding Label}" Foreground="#888888" FontSize="11" FontWeight="SemiBold" TextAlignment="Left" LetterSpacing="0.5"/>
+                                                    <SelectableTextBlock Text="{Binding Value}" Foreground="#FFFFFF" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                                    <Rectangle Height="1" Fill="#1A1A1A" Margin="0,10,0,0"/>
+                                                </StackPanel>
+                                            </Panel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

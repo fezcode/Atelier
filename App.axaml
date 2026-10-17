@@ -14,8 +14,8 @@
 
         <!-- Global App Styling -->
         <Style Selector="Window">
-            <Setter Property="FontFamily" Value="avares://Atelier/Assets/Exo-VariableFont_wght.ttf#Exo, Segoe UI, Arial, sans-serif"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="FontFamily" Value="Segoe UI, Arial, sans-serif"/>
+            <Setter Property="FontWeight" Value="Normal"/>
         </Style>
 
         <!-- Modern Button Style -->
