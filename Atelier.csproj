@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <!-- Single source of truth for the version: the About dialog reads it back off the
          assembly, and forge.toml must be kept in step with it. -->
-    <Version>0.6.1</Version>
+    <Version>0.7.0</Version>
     <Company>Fezcode</Company>
     <Product>Atelier</Product>
     <Nullable>enable</Nullable>
@@ -29,7 +29,10 @@
 
   <ItemGroup>
     <Folder Include="Models\" />
-    <AvaloniaResource Include="Assets\**" />
+    <!-- Only what the UI loads. Assets\ also holds the README images and the icon masters
+         (7.5 MB together); embedding them made Atelier.dll 9 MB, all of it read and
+         virus-scanned on every cold start. -->
+    <AvaloniaResource Include="Assets\atelier-icon.ico;Assets\icon-32.png;Assets\icon-256.png" />
   </ItemGroup>
 
   <ItemGroup>

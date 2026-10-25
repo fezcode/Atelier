@@ -11,14 +11,21 @@ namespace Atelier
     {
         public override void Initialize()
         {
+            StartupTrace.Mark("App.Initialize");
             AvaloniaXamlLoader.Load(this);
+            StartupTrace.Mark("App.axaml loaded");
         }
 
         public override void OnFrameworkInitializationCompleted()
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var window = new MainWindow { DataContext = new MainWindowViewModel() };
+                StartupTrace.Mark("FrameworkInitCompleted");
+                var vm = new MainWindowViewModel();
+                StartupTrace.Mark("ViewModel created");
+                var window = new MainWindow { DataContext = vm };
+                StartupTrace.Mark("MainWindow created");
+                window.Opened += (_, _) => { StartupTrace.Mark("Opened"); window.RequestAnimationFrame(_ => StartupTrace.Mark("First frame")); };
                 desktop.MainWindow = window;
 
                 // Atelier registers itself for file associations, so "open with" is the
@@ -33,7 +40,10 @@ namespace Atelier
                     async void OnStartupOpen(object? sender, System.EventArgs e)
                     {
                         window.Opened -= OnStartupOpen;
+                        StartupTrace.Mark("Load start");
                         await window.LoadAndFitAsync(path);
+                        StartupTrace.Mark("Load done");
+                        window.RequestAnimationFrame(_ => StartupTrace.Mark("Image frame"));
                     }
                 }
             }

@@ -11,15 +11,21 @@ sealed class Program
     // standard .NET libraries until ApplicationMain is called: entropy causes fast
     // things to go wrong.
     [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static void Main(string[] args)
+    {
+        StartupTrace.Mark("Main");
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
+        StartupTrace.Mark("BuildAvaloniaApp");
         GC.KeepAlive(typeof(SvgImageExtension).Assembly);
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .AfterPlatformServicesSetup(_ => StartupTrace.Mark("PlatformServicesSetup"))
+            .AfterSetup(_ => StartupTrace.Mark("AfterSetup"))
             .LogToTrace()
             .UseReactiveUI();
     }

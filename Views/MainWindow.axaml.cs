@@ -48,7 +48,9 @@ namespace Atelier.Views
 
         public MainWindow()
         {
+            StartupTrace.Mark("MainWindow ctor");
             InitializeComponent();
+            StartupTrace.Mark("InitializeComponent");
             AddHandler(DragDrop.DropEvent, Drop);
 
             var scroll = this.FindControl<ScrollViewer>("MainScroll");
@@ -125,8 +127,11 @@ namespace Atelier.Views
             };
 
             InitHisashi();
+            StartupTrace.Mark("InitHisashi");
             InitAppearance();
+            StartupTrace.Mark("InitAppearance");
             InitPaint();
+            StartupTrace.Mark("InitPaint");
             SweepPasteScratch();
         }
 
@@ -705,7 +710,7 @@ namespace Atelier.Views
                 HorizontalAlignment = centre,
                 Children =
                 {
-                    new Image { Source = new Bitmap(AssetLoader.Open(new Uri("avares://Atelier/Assets/atelier-icon.png"))), Width = 132, Height = 132, HorizontalAlignment = centre },
+                    new Image { Source = new Bitmap(AssetLoader.Open(new Uri("avares://Atelier/Assets/icon-256.png"))), Width = 132, Height = 132, HorizontalAlignment = centre },
                     new TextBlock { Text = "Atelier", FontSize = 40, FontWeight = FontWeight.SemiBold, HorizontalAlignment = centre, LetterSpacing = -0.5 },
                     new Border
                     {
