@@ -75,6 +75,4 @@ the assembly, so keep `[app] version` in `forge.toml` in step with it.
 
 ## Application icon
 
-The editable icon design lives in `tools/make-icon.py`. Run
-`python tools/make-icon.py` with Python, Pillow and a C compiler (`gcc`, or set
-`CC`) to regenerate the SVG, PNG and multi-resolution Windows ICO assets.
+The approved transparent artwork is `Assets/icon-master.png`. Run `python tools/make-icon.py` with Python and Pillow to regenerate the PNG sizes, Windows ICO and raster-backed SVG wrapper. Generated assets are committed; normal builds do not require Python.
