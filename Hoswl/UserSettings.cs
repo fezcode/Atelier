@@ -19,6 +19,9 @@ namespace Atelier.Hoswl
         /// next launch, so the same click was needed every session.</summary>
         [JsonPropertyName("showMetadata")]       public bool ShowMetadata       { get; set; } = true;
 
+        /// <summary>View &gt; Appearance: backdrop material, glass, transparency and tint.</summary>
+        [JsonPropertyName("appearance")]         public Theme.Appearance Appearance { get; set; } = new();
+
         /// <summary>
         /// Redirects <see cref="DefaultPath"/> for the whole process. The test assembly
         /// points it at a temp file: settings are now written on ordinary UI actions

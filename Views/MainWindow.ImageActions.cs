@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Atelier.Theme;
 using Atelier.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
@@ -180,7 +182,6 @@ namespace Atelier.Views
                     new TextBlock
                     {
                         Text = $"Remove all metadata from {fileName}?",
-                        Foreground = Brushes.White,
                         FontSize = 15,
                         FontWeight = FontWeight.SemiBold,
                         TextWrapping = TextWrapping.Wrap,
@@ -190,7 +191,7 @@ namespace Atelier.Views
                         Text = "EXIF (camera, dates, GPS location), XMP, IPTC, comments and Content " +
                                "Credentials (C2PA) are removed from the file. The colour profile and " +
                                "orientation are kept. This cannot be undone.",
-                        Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")),
+                        [!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Atelier.TextSecondaryBrush"),
                         FontSize = 13,
                         TextWrapping = TextWrapping.Wrap,
                     },
@@ -338,7 +339,6 @@ namespace Atelier.Views
                         Text = edited
                             ? $"{fileName} has edits that have not been saved."
                             : $"{fileName} has been rotated but not saved.",
-                        Foreground = Brushes.White,
                         FontSize = 15,
                         FontWeight = FontWeight.SemiBold,
                         TextWrapping = TextWrapping.Wrap,
@@ -348,7 +348,7 @@ namespace Atelier.Views
                         Text = edited
                             ? "Saving writes them into the file."
                             : "Saving rewrites the file with the turn applied.",
-                        Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")),
+                        [!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Atelier.TextSecondaryBrush"),
                         FontSize = 13,
                         TextWrapping = TextWrapping.Wrap,
                     },
@@ -382,17 +382,7 @@ namespace Atelier.Views
         {
             string? result = null;
 
-            var box = new TextBox
-            {
-                Text = currentName,
-                FontSize = 14,
-                Background = new SolidColorBrush(Color.Parse("#151515")),
-                Foreground = Brushes.White,
-                BorderBrush = new SolidColorBrush(Color.Parse("#333333")),
-                BorderThickness = new Thickness(1),
-                Padding = new Thickness(10, 8),
-                CornerRadius = new CornerRadius(4),
-            };
+            var box = GlassTextBox(currentName);
 
             var rename = DialogButton("Rename", isDefault: true);
             var cancel = DialogButton("Cancel");
@@ -405,7 +395,7 @@ namespace Atelier.Views
                     new TextBlock
                     {
                         Text = "New name",
-                        Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")),
+                        [!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Atelier.TextSecondaryBrush"),
                         FontSize = 13,
                         FontWeight = FontWeight.SemiBold,
                     },
@@ -448,46 +438,60 @@ namespace Atelier.Views
 
         // ---- Shared dialog chrome --------------------------------------------------
 
-        /// <summary>A window in the same dark, mica-backed style as About.</summary>
-        private static Window Dialog(string title, int width, int height, Control content) => new()
+        /// <summary>A window on the same glass as the main one, following View &gt; Appearance.</summary>
+        internal static Window Dialog(string title, int width, int height, Control content)
         {
-            Title = title,
-            Width = width,
-            Height = height,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            CanResize = false,
-            Background = new SolidColorBrush(Color.Parse("#0A0A0A")),
-            TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur },
-            ExtendClientAreaToDecorationsHint = true,
-            ExtendClientAreaTitleBarHeightHint = -1,
-            Content = new Border
+            var dialog = new Window
             {
-                BorderBrush = new SolidColorBrush(Color.Parse("#222222")),
-                BorderThickness = new Thickness(1),
-                Child = new Panel
+                Title = title,
+                Width = width,
+                Height = height,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = false,
+                Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Atelier/Assets/atelier-icon.ico"))),
+                ExtendClientAreaToDecorationsHint = true,
+                ExtendClientAreaTitleBarHeightHint = -1,
+                Content = GlassTheme.Host(new Panel
                 {
-                    Margin = new Thickness(28, 48, 28, 24),
+                    Margin = new Thickness(28, 44, 28, 24),
                     Children = { content },
-                },
-            },
+                }),
+            };
+            GlassTheme.Attach(dialog);
+            return dialog;
+        }
+
+        internal static Button DialogButton(string text, bool isDefault = false)
+        {
+            var b = new Button
+            {
+                Classes = { "Modern" },
+                Content = text,
+                MinWidth = 88,
+                Padding = new Thickness(16, 8),
+                FontWeight = isDefault ? FontWeight.SemiBold : FontWeight.Medium,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                IsDefault = isDefault,
+            };
+            if (isDefault) b.Classes.Add("Accent");
+            return b;
+        }
+
+        /// <summary>A text field on the glass: tinted, rounded, accent ring when focused.</summary>
+        internal static TextBox GlassTextBox(string? text, double fontSize = 14) => new()
+        {
+            Text = text,
+            FontSize = fontSize,
+            Padding = new Thickness(10, 7),
+            CornerRadius = new CornerRadius(7),
         };
 
-        private static Button DialogButton(string text, bool isDefault = false) => new()
+        /// <summary>Binds a property to one of GlassTheme's brushes so it follows View &gt; Appearance.</summary>
+        internal static T Themed<T>(T control, AvaloniaProperty property, string key) where T : Control
         {
-            Content = text,
-            MinWidth = 88,
-            Padding = new Thickness(14, 8),
-            FontWeight = isDefault ? FontWeight.Bold : FontWeight.Medium,
-            Foreground = isDefault ? Brushes.White : new SolidColorBrush(Color.Parse("#DDDDDD")),
-            Background = isDefault
-                ? new SolidColorBrush(Color.Parse("#1E6FD9"))
-                : new SolidColorBrush(Color.Parse("#1C1C1C")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#333333")),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(4),
-            HorizontalContentAlignment = HorizontalAlignment.Center,
-            IsDefault = isDefault,
-        };
+            control[!property] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key);
+            return control;
+        }
 
         // ---- Animation playback ----------------------------------------------------
 

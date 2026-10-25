@@ -421,28 +421,22 @@ namespace Atelier.Views
 
         // ---- Dialogs ---------------------------------------------------------------
 
-        private static TextBox NumberBox(string text) => new()
+        private static TextBox NumberBox(string text)
         {
-            Text = text,
-            Width = 90,
-            FontSize = 13,
-            Background = new SolidColorBrush(Color.Parse("#151515")),
-            Foreground = Brushes.White,
-            BorderBrush = new SolidColorBrush(Color.Parse("#333333")),
-            BorderThickness = new Thickness(1),
-            Padding = new Thickness(8, 5),
-            CornerRadius = new CornerRadius(4),
-        };
+            var box = GlassTextBox(text, 13);
+            box.Width = 90;
+            box.Padding = new Thickness(8, 5);
+            return box;
+        }
 
-        private static TextBlock Label(string text, bool heading = false) => new()
+        private static TextBlock Label(string text, bool heading = false) => Themed(new TextBlock
         {
             Text = text,
-            Foreground = new SolidColorBrush(Color.Parse(heading ? "#888888" : "#DDDDDD")),
             FontSize = heading ? 11 : 13,
             FontWeight = heading ? FontWeight.Bold : FontWeight.Medium,
             LetterSpacing = heading ? 1 : 0,
             VerticalAlignment = VerticalAlignment.Center,
-        };
+        }, TextBlock.ForegroundProperty, heading ? "Atelier.TextMutedBrush" : "Atelier.TextBrush");
 
         private static bool TryNumber(TextBox box, out double value) =>
             double.TryParse(box.Text?.Trim().TrimEnd('%'), NumberStyles.Float, CultureInfo.CurrentCulture, out value)
@@ -458,7 +452,7 @@ namespace Atelier.Views
             {
                 var u = Label(unit);
                 u.Margin = new Thickness(8, 0, 0, 0);
-                u.Foreground = new SolidColorBrush(Color.Parse("#888888"));
+                Themed(u, TextBlock.ForegroundProperty, "Atelier.TextMutedBrush");
                 Grid.SetColumn(u, 2);
                 grid.Children.Add(u);
             }
@@ -476,11 +470,11 @@ namespace Atelier.Views
             var subject = vm.ResizeSubjectSize;
             if (subject.Width <= 0 || subject.Height <= 0) return;
 
-            var byPercent = new RadioButton { Content = "Percentage", IsChecked = true, GroupName = "ResizeBy", Foreground = Brushes.White };
-            var byPixels = new RadioButton { Content = "Pixels", GroupName = "ResizeBy", Foreground = Brushes.White };
+            var byPercent = new RadioButton { Content = "Percentage", IsChecked = true, GroupName = "ResizeBy" };
+            var byPixels = new RadioButton { Content = "Pixels", GroupName = "ResizeBy" };
             var horizontal = NumberBox("100");
             var vertical = NumberBox("100");
-            var keepAspect = new CheckBox { Content = "Maintain aspect ratio", IsChecked = true, Foreground = Brushes.White };
+            var keepAspect = new CheckBox { Content = "Maintain aspect ratio", IsChecked = true };
             var skewH = NumberBox("0");
             var skewV = NumberBox("0");
             var unitH = Label("%");
@@ -534,7 +528,7 @@ namespace Atelier.Views
                     UnitRow("Horizontal", horizontal, unitH),
                     UnitRow("Vertical", vertical, unitV),
                     keepAspect,
-                    new Border { Height = 1, Background = new SolidColorBrush(Color.Parse("#222222")), Margin = new Thickness(0, 6) },
+                    Themed(new Border { Height = 1, Margin = new Thickness(0, 6) }, Border.BackgroundProperty, "Atelier.DividerBrush"),
                     Label("SKEW (DEGREES)", heading: true),
                     Row("Horizontal", skewH, "°"),
                     Row("Vertical", skewV, "°"),
@@ -594,7 +588,7 @@ namespace Atelier.Views
                     new TextBlock
                     {
                         Text = "New space is filled with colour 2. The picture is not scaled.",
-                        Foreground = new SolidColorBrush(Color.Parse("#888888")), FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                        [!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Atelier.TextMutedBrush"), FontSize = 12, TextWrapping = TextWrapping.Wrap,
                     },
                     new StackPanel
                     {

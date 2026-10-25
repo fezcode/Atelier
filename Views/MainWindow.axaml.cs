@@ -125,6 +125,7 @@ namespace Atelier.Views
             };
 
             InitHisashi();
+            InitAppearance();
             InitPaint();
             SweepPasteScratch();
         }
@@ -462,7 +463,6 @@ namespace Atelier.Views
                 {
                     Content = $"{ext}  —  {desc}",
                     IsChecked = registered.Contains(ext),
-                    Foreground = Brushes.White,
                     FontSize = 14,
                     FontWeight = FontWeight.SemiBold,
                     Margin = new Thickness(0, 4)
@@ -474,7 +474,6 @@ namespace Atelier.Views
             {
                 Content = "Select All",
                 IsChecked = checkBoxes.All(cb => cb.IsChecked == true),
-                Foreground = Brushes.White,
                 FontSize = 13,
                 FontWeight = FontWeight.SemiBold,
                 Margin = new Thickness(0, 0, 0, 10)
@@ -487,52 +486,32 @@ namespace Atelier.Views
 
             var list = new StackPanel { Spacing = 2 };
             list.Children.Add(selectAllCb);
-            list.Children.Add(new Separator { Background = new SolidColorBrush(Color.Parse("#333333")), Margin = new Thickness(0, 2, 0, 8) });
+            list.Children.Add(new Separator { Margin = new Thickness(0, 2, 0, 8) });
             foreach (var cb in checkBoxes)
                 list.Children.Add(cb);
 
             var applyBtn = new Button
             {
-                Classes = { "Modern" },
+                Classes = { "Modern", "Accent" },
                 Content = "Save Associations",
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                Padding = new Thickness(0, 12, 0, 12),
-                Background = new SolidColorBrush(Color.Parse("#2A2A2A")),
-                Margin = new Thickness(0, 25, 0, 0),
-                FontWeight = FontWeight.ExtraBold,
+                Padding = new Thickness(0, 11, 0, 11),
+                Margin = new Thickness(0, 18, 0, 0),
                 FontSize = 14
             };
 
-            var dialog = new Window
+            var dialog = Dialog("File Associations", 420, 580, new StackPanel
             {
-                Title = "File Associations",
-                Width = 400,
-                Height = 560,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                CanResize = false,
-                Background = new SolidColorBrush(Color.Parse("#0A0A0A")),
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur },
-                ExtendClientAreaToDecorationsHint = true,
-                ExtendClientAreaTitleBarHeightHint = -1,
-                Content = new Border
+                Children =
                 {
-                    BorderBrush = new SolidColorBrush(Color.Parse("#222222")),
-                    BorderThickness = new Thickness(1),
-                    Margin = new Thickness(0),
-                    Child = new StackPanel
-                    {
-                        Margin = new Thickness(35, 50, 35, 35),
-                        Children =
-                        {
-                            new TextBlock { Text = "FILE ASSOCIATIONS", Foreground = new SolidColorBrush(Color.Parse("#888888")), FontSize = 11, FontWeight = FontWeight.ExtraBold, LetterSpacing = 1.5, Margin = new Thickness(0, 0, 0, 25) },
-                            new TextBlock { Text = "Choose which file types to open with Atelier:", Foreground = Brushes.White, FontSize = 14, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 20) },
-                            new ScrollViewer { Content = list, Height = 320 },
-                            applyBtn
-                        }
-                    }
+                    new TextBlock { Text = "File associations", FontSize = 22, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 4) },
+                    Themed(new TextBlock { Text = "Choose which file types open with Atelier.", FontSize = 13, Margin = new Thickness(0, 0, 0, 18) },
+                        TextBlock.ForegroundProperty, "Atelier.TextMutedBrush"),
+                    new Border { Classes = { "Card" }, Padding = new Thickness(14, 8), Child = new ScrollViewer { Content = list, Height = 330 } },
+                    applyBtn
                 }
-            };
+            });
 
             applyBtn.Click += (_, _) =>
             {
@@ -558,28 +537,20 @@ namespace Atelier.Views
 
         private async System.Threading.Tasks.Task ShowMessageDialog(string title, string message)
         {
-            var dialog = new Window
+            var okBtn = DialogButton("Got it", isDefault: true);
+            okBtn.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
+            okBtn.Padding = new Thickness(40, 9);
+            var dialog = Dialog(title, 400, 220, new StackPanel
             {
-                Title = title,
-                Width = 400,
-                Height = 220,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                CanResize = false,
-                Background = new SolidColorBrush(Color.Parse("#0A0A0A")),
-                Content = new StackPanel
+                Spacing = 22,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Children =
                 {
-                    Margin = new Thickness(30),
-                    Spacing = 25,
-                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-                    Children =
-                    {
-                        new TextBlock { Text = message, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, FontSize = 14, TextAlignment = TextAlignment.Center },
-                        new Button { Classes = { "Modern" }, Content = "Got it", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Padding = new Thickness(40, 10), Background = new SolidColorBrush(Color.Parse("#2A2A2A")) }
-                    }
+                    new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, FontSize = 14, TextAlignment = TextAlignment.Center },
+                    okBtn
                 }
-            };
-            if (dialog.Content is StackPanel sp && sp.Children[1] is Button okBtn)
-                okBtn.Click += (_, _) => dialog.Close();
+            });
+            okBtn.Click += (_, _) => dialog.Close();
             await dialog.ShowDialog(this);
         }
 
@@ -726,38 +697,29 @@ namespace Atelier.Views
 
         public void About_Click(object? sender, RoutedEventArgs e)
         {
-            var aboutWindow = new Window
+            var centre = Avalonia.Layout.HorizontalAlignment.Center;
+            var aboutWindow = Dialog("About Atelier", 440, 500, new StackPanel
             {
-                Title = "About Atelier",
-                Width = 450,
-                Height = 480,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                CanResize = false,
-                Background = new SolidColorBrush(Color.Parse("#0A0A0A")),
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur },
-                ExtendClientAreaToDecorationsHint = true,
-                ExtendClientAreaTitleBarHeightHint = -1,
-                Content = new Border
+                Spacing = 14,
+                Margin = new Thickness(12, 8, 12, 0),
+                HorizontalAlignment = centre,
+                Children =
                 {
-                    BorderBrush = new SolidColorBrush(Color.Parse("#222222")),
-                    BorderThickness = new Thickness(1),
-                    Child = new StackPanel
+                    new Image { Source = new Bitmap(AssetLoader.Open(new Uri("avares://Atelier/Assets/atelier-icon.png"))), Width = 132, Height = 132, HorizontalAlignment = centre },
+                    new TextBlock { Text = "Atelier", FontSize = 40, FontWeight = FontWeight.SemiBold, HorizontalAlignment = centre, LetterSpacing = -0.5 },
+                    new Border
                     {
-                        Margin = new Thickness(40, 60, 40, 40),
-                        Spacing = 20,
-                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                        Children =
-                        {
-                            new Image { Source = new Bitmap(AssetLoader.Open(new Uri("avares://Atelier/Assets/atelier-icon.png"))), Width = 96, Height = 96, Margin = new Thickness(0,0,0,10) },
-                            new TextBlock { Text = "ATELIER", FontSize = 48, FontWeight = FontWeight.ExtraBold, Foreground = Brushes.White, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, LetterSpacing = -1 },
-                            new TextBlock { Text = $"v{AppVersion}", FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = new SolidColorBrush(Color.Parse("#AAAAAA")), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,0,0,15) },
-                            new TextBlock { Text = "A modern, high-performance image viewer built with Avalonia UI & Magick.NET.", FontWeight = FontWeight.Medium, Foreground = new SolidColorBrush(Color.Parse("#DDDDDD")), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, FontSize = 16 },
-                            new Rectangle { Height = 1, Fill = new SolidColorBrush(Color.Parse("#222222")), Margin = new Thickness(20,10) },
-                            new TextBlock { Text = "developed by fezcode", FontSize = 14, FontWeight = FontWeight.Bold, Foreground = Brushes.DodgerBlue, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center }
-                        }
-                    }
+                        Classes = { "Card" }, CornerRadius = new CornerRadius(11), Padding = new Thickness(12, 3), HorizontalAlignment = centre,
+                        Child = Themed(new TextBlock { Text = $"v{AppVersion}", FontSize = 12.5, FontWeight = FontWeight.SemiBold }, TextBlock.ForegroundProperty, "Atelier.AccentBrush"),
+                    },
+                    Themed(new TextBlock { Text = "A modern, high-performance image viewer built with Avalonia UI & Magick.NET.", FontSize = 14, HorizontalAlignment = centre, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) },
+                        TextBlock.ForegroundProperty, "Atelier.TextSecondaryBrush"),
+                    Themed(new Rectangle { Height = 1, Margin = new Thickness(30, 8) }, Shape.FillProperty, "Atelier.DividerBrush"),
+                    Themed(new TextBlock { Text = "developed by fezcode", FontSize = 13, FontWeight = FontWeight.SemiBold, HorizontalAlignment = centre },
+                        TextBlock.ForegroundProperty, "Atelier.AccentBrush"),
                 }
-            };
+            });
+            aboutWindow.KeyDown += (_, k) => { if (k.Key == Key.Escape) aboutWindow.Close(); };
             aboutWindow.ShowDialog(this);
         }
 
@@ -1067,6 +1029,11 @@ namespace Atelier.Views
                         SetFrameMode(false);
                         e.Handled = true;
                     }
+                }
+                else if (e.Key == Key.OemComma && ctrl)
+                {
+                    Appearance_Click(null, new RoutedEventArgs());
+                    e.Handled = true;
                 }
                 else if (e.Key == Key.O && ctrl)
                 {

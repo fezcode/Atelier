@@ -68,7 +68,7 @@ namespace Atelier.Hoswl
                 }
                 else
                 {
-                    var key = item.InputGesture?.ToString();
+                    var key = item.InputGesture is { } g ? Theme.ShortcutText.Format(g) : null;
                     if (!string.IsNullOrEmpty(key)) w.WriteString("key", key);
                     if (item.ToggleType == MenuItemToggleType.CheckBox) w.WriteBoolean("check", item.IsChecked);
                 }

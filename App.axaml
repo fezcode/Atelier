@@ -6,57 +6,212 @@
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
-  
+
+    <!-- Every Atelier.* brush is rewritten by Theme/GlassTheme from View > Appearance. These
+         are only the defaults the designer and the first frame see. -->
+    <Application.Resources>
+        <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+        <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+        <SolidColorBrush x:Key="Atelier.BackdropBrush" Color="#8C140F22"/>
+        <SolidColorBrush x:Key="Atelier.DialogBackdropBrush" Color="#E0140F22"/>
+        <SolidColorBrush x:Key="Atelier.ChromeBrush" Color="#5A1B1730"/>
+        <SolidColorBrush x:Key="Atelier.PaneBrush" Color="#4A19152B"/>
+        <SolidColorBrush x:Key="Atelier.CardBrush" Color="#12FFFFFF"/>
+        <SolidColorBrush x:Key="Atelier.CardHoverBrush" Color="#22FFFFFF"/>
+        <SolidColorBrush x:Key="Atelier.CardPressedBrush" Color="#0CFFFFFF"/>
+        <SolidColorBrush x:Key="Atelier.StrokeBrush" Color="#1CFFFFFF"/>
+        <SolidColorBrush x:Key="Atelier.StrokeStrongBrush" Color="#33FFFFFF"/>
+        <SolidColorBrush x:Key="Atelier.DividerBrush" Color="#16FFFFFF"/>
+        <SolidColorBrush x:Key="Atelier.PopupBrush" Color="#F7171326"/>
+        <SolidColorBrush x:Key="Atelier.PopupStrokeBrush" Color="#26FFFFFF"/>
+        <SolidColorBrush x:Key="Atelier.TextBrush" Color="#F5F2FF"/>
+        <SolidColorBrush x:Key="Atelier.TextSecondaryBrush" Color="#D2CDE2"/>
+        <SolidColorBrush x:Key="Atelier.TextMutedBrush" Color="#A6A0BA"/>
+        <SolidColorBrush x:Key="Atelier.TextFaintBrush" Color="#807A94"/>
+        <SolidColorBrush x:Key="Atelier.AccentBrush" Color="#AE9AF4"/>
+        <SolidColorBrush x:Key="Atelier.AccentSolidBrush" Color="#6D56BD"/>
+        <SolidColorBrush x:Key="Atelier.AccentSolidHoverBrush" Color="#7F65DE"/>
+        <SolidColorBrush x:Key="Atelier.AccentSolidPressedBrush" Color="#5E4AA2"/>
+        <SolidColorBrush x:Key="Atelier.AccentSoftBrush" Color="#408B6CF0"/>
+        <SolidColorBrush x:Key="Atelier.AccentStrokeBrush" Color="#D99F87F3"/>
+        <SolidColorBrush x:Key="Atelier.DangerBrush" Color="#FF8FA3"/>
+        <SolidColorBrush x:Key="Atelier.DangerSoftBrush" Color="#33FF6F8A"/>
+        <SolidColorBrush x:Key="Atelier.SuccessBrush" Color="#86E3B5"/>
+        <SolidColorBrush x:Key="Atelier.WarmBrush" Color="#FFB38A"/>
+        <LinearGradientBrush x:Key="Atelier.AccentGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#B988E2" Offset="0"/>
+            <GradientStop Color="#9A80F2" Offset="0.5"/>
+            <GradientStop Color="#8DA0F8" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Atelier.SheenBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#0FFFFFFF" Offset="0"/>
+            <GradientStop Color="#00FFFFFF" Offset="0.55"/>
+            <GradientStop Color="#0AFFB38A" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Atelier.RimBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Color="#3DFFFFFF" Offset="0"/>
+            <GradientStop Color="#12FFFFFF" Offset="0.6"/>
+            <GradientStop Color="#0CFFFFFF" Offset="1"/>
+        </LinearGradientBrush>
+    </Application.Resources>
+
     <Application.Styles>
-        <FluentTheme />
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <!-- Accent is retinted at runtime; see GlassTheme. -->
+                <ColorPaletteResources x:Key="Dark" Accent="#9A80F2"/>
+            </FluentTheme.Palettes>
+        </FluentTheme>
         <!-- Edit mode's Edit Colours dialog uses ColorView. -->
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
 
         <!-- Global App Styling -->
         <Style Selector="Window">
-            <Setter Property="FontFamily" Value="Segoe UI, Arial, sans-serif"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, Arial, sans-serif"/>
             <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
         </Style>
 
-        <!-- Modern Button Style -->
+        <!-- The two layers every window sits on: tinted glass, then the iridescent sheen. -->
+        <Style Selector="Border.GlassBackdrop">
+            <Setter Property="Background" Value="{DynamicResource Atelier.BackdropBrush}"/>
+        </Style>
+        <Style Selector="Border.GlassBackdrop.Dialog">
+            <Setter Property="Background" Value="{DynamicResource Atelier.DialogBackdropBrush}"/>
+        </Style>
+        <Style Selector="Border.GlassSheen">
+            <Setter Property="Background" Value="{DynamicResource Atelier.SheenBrush}"/>
+        </Style>
+
+        <!-- A floating glass card: a pane inside the glass, with light along its top edge. -->
+        <Style Selector="Border.Card">
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.RimBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+        </Style>
+
+        <!-- Small caps section heading. -->
+        <Style Selector="TextBlock.Eyebrow">
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextMutedBrush}"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="1.2"/>
+        </Style>
+
+        <!-- Modern Button Style: a glass chip. -->
         <Style Selector="Button.Modern">
-            <Setter Property="Background" Value="#1F1F1F"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.RimBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="RenderTransform" Value="none"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1"/>
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="Button.Modern:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#2A2A2A"/>
-            <Setter Property="BorderBrush" Value="#444444"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeStrongBrush}"/>
         </Style>
         <Style Selector="Button.Modern:pressed">
             <Setter Property="RenderTransform" Value="scale(0.96)"/>
+        </Style>
+        <Style Selector="Button.Modern:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardPressedBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeBrush}"/>
+        </Style>
+
+        <!-- The one thing on a surface you are expected to press. -->
+        <Style Selector="Button.Accent">
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSolidBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.Accent:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSolidHoverBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.Accent:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSolidPressedBrush}"/>
+            <Setter Property="Foreground" Value="#E6FFFFFF"/>
+        </Style>
+
+        <!-- Destructive actions read red without shouting. -->
+        <Style Selector="Button.Danger">
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.DangerBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.DangerSoftBrush}"/>
+        </Style>
+        <Style Selector="Button.Danger:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Atelier.DangerSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.DangerSoftBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.DangerBrush}"/>
         </Style>
 
         <!-- Icon Button Style -->
         <Style Selector="Button.Icon">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextSecondaryBrush}"/>
             <Setter Property="Padding" Value="8"/>
-            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="Button.Icon:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#2A2A2A"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
+        </Style>
+        <Style Selector="Button.Icon:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- Segmented choice: a row of radio buttons inside one glass track. -->
+        <Style Selector="RadioButton.Segment">
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextSecondaryBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.Segment:pointerover">
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
+        </Style>
+        <Style Selector="RadioButton.Segment:checked">
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.AccentStrokeBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
         </Style>
 
         <!-- Modern Menu Style -->
@@ -64,25 +219,55 @@
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="MenuItem">
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="MinHeight" Value="30"/>
             <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.15"/>
                 </Transitions>
             </Setter>
         </Style>
+        <!-- The bar's own headers: a touch heavier and dimmer until hovered. -->
+        <Style Selector="Menu > MenuItem">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextSecondaryBrush}"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
+        </Style>
         <Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot">
-            <Setter Property="Background" Value="#1A1A1A"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
+        </Style>
+        <Style Selector="Menu > MenuItem:open /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
         </Style>
         <Style Selector="MenuItem:pointerover /template/ ContentPresenter#PART_HeaderPresenter">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
+        </Style>
+        <Style Selector="MenuItem /template/ TextBlock#PART_InputGestureText">
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextMutedBrush}"/>
+        </Style>
+        <Style Selector="MenuFlyoutPresenter, ContextMenu">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="10"/>
+        </Style>
+        <Style Selector="Separator">
+            <Setter Property="Background" Value="{DynamicResource Atelier.DividerBrush}"/>
+        </Style>
+
+        <Style Selector="ToolTip">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,6"/>
+        </Style>
+
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
+        </Style>
+        <Style Selector="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
         </Style>
     </Application.Styles>
 </Application>

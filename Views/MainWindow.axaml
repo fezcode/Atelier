@@ -9,7 +9,7 @@
         x:DataType="vm:MainWindowViewModel"
         Title="Atelier"
         Icon="/Assets/atelier-icon.ico"
-        Background="#0A0A0A"
+        Background="Transparent"
         TransparencyLevelHint="Mica, AcrylicBlur"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="-1"
@@ -23,8 +23,8 @@
     <Window.Styles>
         <!-- ==== Edit mode ribbon (Paint-style) ==== -->
         <Style Selector="Border.Ribbon">
-            <Setter Property="Background" Value="#0D0D0D"/>
-            <Setter Property="BorderBrush" Value="#1A1A1A"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.ChromeBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.DividerBrush}"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
         </Style>
         <Style Selector="DockPanel.RibGroup">
@@ -33,7 +33,7 @@
         <Style Selector="TextBlock.RibLabel">
             <Setter Property="DockPanel.Dock" Value="Bottom"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="Foreground" Value="#6A6A6A"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextMutedBrush}"/>
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="LetterSpacing" Value="0.5"/>
@@ -41,11 +41,11 @@
         </Style>
         <Style Selector="Rectangle.RibSep">
             <Setter Property="Width" Value="1"/>
-            <Setter Property="Fill" Value="#222222"/>
+            <Setter Property="Fill" Value="{DynamicResource Atelier.DividerBrush}"/>
             <Setter Property="Margin" Value="2,4"/>
         </Style>
         <Style Selector="Path.Ico">
-            <Setter Property="Stroke" Value="#DDDDDD"/>
+            <Setter Property="Stroke" Value="{DynamicResource Atelier.TextBrush}"/>
             <Setter Property="StrokeThickness" Value="1.3"/>
             <Setter Property="StrokeLineCap" Value="Round"/>
             <Setter Property="StrokeJoin" Value="Round"/>
@@ -54,15 +54,15 @@
             <Setter Property="Stretch" Value="None"/>
         </Style>
         <Style Selector=":disabled Path.Ico">
-            <Setter Property="Stroke" Value="#555555"/>
+            <Setter Property="Stroke" Value="{DynamicResource Atelier.TextFaintBrush}"/>
         </Style>
         <Style Selector="TextBlock.RibText">
-            <Setter Property="Foreground" Value="#DDDDDD"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextBrush}"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector=":disabled TextBlock.RibText">
-            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextFaintBrush}"/>
         </Style>
 
         <!-- Ribbon buttons and tool toggles. Not focusable, so the keyboard shortcuts keep
@@ -98,25 +98,25 @@
             </Setter>
         </Style>
         <Style Selector="RadioButton.Tool:pointerover">
-            <Setter Property="Background" Value="#1F1F1F"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
         </Style>
         <Style Selector="RadioButton.Tool:checked">
-            <Setter Property="Background" Value="#16304F"/>
-            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.AccentStrokeBrush}"/>
         </Style>
         <Style Selector="Button.Rib:pointerover /template/ ContentPresenter, ToggleButton.Rib:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#1F1F1F"/>
-            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeBrush}"/>
         </Style>
         <Style Selector="ToggleButton.Rib:checked /template/ ContentPresenter">
-            <Setter Property="Background" Value="#16304F"/>
-            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.AccentStrokeBrush}"/>
         </Style>
 
         <!-- Shape gallery: a dense grid of outlines, highlighted only while the shape tool is in hand. -->
         <Style Selector="ListBox.Gallery">
-            <Setter Property="Background" Value="#111111"/>
-            <Setter Property="BorderBrush" Value="#222222"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="4"/>
             <Setter Property="Padding" Value="2"/>
@@ -131,7 +131,7 @@
             <Setter Property="Focusable" Value="False"/>
         </Style>
         <Style Selector="ListBox.Gallery ListBoxItem:selected /template/ ContentPresenter">
-            <Setter Property="Background" Value="#16304F"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
         </Style>
 
         <!-- Colour wells and palette swatches -->
@@ -144,19 +144,19 @@
             <Setter Property="Padding" Value="4,3"/>
         </Style>
         <Style Selector="Button.Well.active">
-            <Setter Property="Background" Value="#16304F"/>
-            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.AccentStrokeBrush}"/>
         </Style>
         <Style Selector="Button.Well.active:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#16304F"/>
-            <Setter Property="BorderBrush" Value="#1E6FD9"/>
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.AccentStrokeBrush}"/>
         </Style>
         <Style Selector="Border.Swatch">
             <Setter Property="Width" Value="16"/>
             <Setter Property="Height" Value="16"/>
             <Setter Property="Margin" Value="1"/>
             <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="BorderBrush" Value="#3A3A3A"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeStrongBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
         <Style Selector="Border.Swatch:pointerover">
@@ -188,13 +188,13 @@
         </Style>
 
         <Style Selector="TextBlock.StatusText">
-            <Setter Property="Foreground" Value="#BBBBBB"/>
+            <Setter Property="Foreground" Value="{DynamicResource Atelier.TextSecondaryBrush}"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Path.StatusIco">
-            <Setter Property="Stroke" Value="#777777"/>
+            <Setter Property="Stroke" Value="{DynamicResource Atelier.TextMutedBrush}"/>
             <Setter Property="StrokeThickness" Value="1.2"/>
             <Setter Property="Width" Value="14"/>
             <Setter Property="Height" Value="14"/>
@@ -202,20 +202,74 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
         </Style>
+
+        <!-- The view-mode navigation dock: round glass buttons inside one pill. -->
+        <Style Selector="Button.Dock">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="17"/>
+            <Setter Property="MinWidth" Value="34"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="RenderTransform" Value="none"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.Dock:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
+        </Style>
+        <Style Selector="Button.Dock:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.92)"/>
+        </Style>
+        <Style Selector="Path.DockIco">
+            <Setter Property="Stroke" Value="{DynamicResource Atelier.TextBrush}"/>
+            <Setter Property="StrokeThickness" Value="1.6"/>
+            <Setter Property="StrokeLineCap" Value="Round"/>
+            <Setter Property="StrokeJoin" Value="Round"/>
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Stretch" Value="None"/>
+        </Style>
     </Window.Styles>
+
+    <!-- The window itself is transparent: the OS backdrop (Mica by default) shows through
+         these two layers, which View > Appearance tints and frosts. -->
+    <Panel>
+    <Border Classes="GlassBackdrop" IsHitTestVisible="False"/>
+    <Border Classes="GlassSheen" IsHitTestVisible="False"/>
 
     <Grid RowDefinitions="Auto,*,Auto">
         <!-- Menu Bar Area -->
-        <Border Grid.Row="0" Name="TopBar" Background="#060606" BorderBrush="#1A1A1A" BorderThickness="0,0,0,1" IsVisible="{Binding ShowTopBar}" Height="80" ClipToBounds="False">
+        <Border Grid.Row="0" Name="TopBar" Background="{DynamicResource Atelier.ChromeBrush}" BorderBrush="{DynamicResource Atelier.DividerBrush}" BorderThickness="0,0,0,1" IsVisible="{Binding ShowTopBar}" Height="80" ClipToBounds="False">
             <Grid RowDefinitions="40,40">
                 <!-- Dedicated Draggable Area (Top half) -->
                 <Panel Grid.Row="0" Name="DragArea" Background="Transparent" IsHitTestVisible="True">
-                    <TextBlock Text="ATELIER" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" 
-                               Foreground="White" FontSize="11" FontWeight="ExtraBold" IsHitTestVisible="False" LetterSpacing="3"/>
+                    <StackPanel Orientation="Horizontal" Spacing="9" Margin="16,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <Image Source="/Assets/icon-32.png" Width="18" Height="18" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        <TextBlock Text="Atelier" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Atelier.TextBrush}" LetterSpacing="0.3"/>
+                    </StackPanel>
                 </Panel>
-                
+
                 <!-- Menu Area (Bottom half, explicitly interactive) -->
-                <Menu Grid.Row="1" Name="MainMenu" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="15,0,0,0" Background="Transparent" ClipToBounds="False">
+                <!-- In the title strip, left of the caption buttons: the menu row below goes away
+                     while Hisashi hosts the menus, and this has to stay reachable then too. -->
+                <Button Grid.Row="0" Name="AppearanceButton" Classes="Icon" Click="Appearance_Click"
+                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,150,0" Padding="8,4"
+                        ToolTip.Tip="Appearance: glass, transparency and colour">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <Ellipse Width="12" Height="12" Fill="{DynamicResource Atelier.AccentGradientBrush}"
+                                 Stroke="{DynamicResource Atelier.RimBrush}" StrokeThickness="1"/>
+                        <TextBlock Text="Appearance" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Menu Grid.Row="1" Name="MainMenu" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0,0,0" Background="Transparent" ClipToBounds="False">
                     <MenuItem Header="_File">
                         <MenuItem Header="_Open..." Click="OpenFileName_Click" InputGesture="Ctrl+O"/>
                         <!-- Save only lights up once a rotation or flip has been made, which is
@@ -257,6 +311,7 @@
                         <MenuItem Header="_Fit to Screen" Click="FitToScreen_Click"/>
                         <Separator/>
                         <MenuItem Header="Image _Metadata" IsChecked="{Binding ShowMetadata, Mode=TwoWay}" ToggleType="CheckBox"/>
+                        <MenuItem Header="_Appearance..." Click="Appearance_Click" InputGesture="Ctrl+OemComma"/>
                         <Separator/>
                         <!-- Hisashi OS Window Layer: publish these menus to Hisashi's menubar.
                              State is persisted by MainWindow, which watches IsChecked. -->
@@ -522,7 +577,7 @@
                                     <ListBox.ItemTemplate>
                                         <DataTemplate x:DataType="vm:ShapeOption">
                                             <Path Data="{Binding Icon}" ToolTip.Tip="{Binding Name}"
-                                                  Stroke="#DDDDDD" StrokeThickness="1.1" Width="18" Height="18" Stretch="None"/>
+                                                  Stroke="{DynamicResource Atelier.TextBrush}" StrokeThickness="1.1" Width="18" Height="18" Stretch="None"/>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
                                 </ListBox>
@@ -605,7 +660,7 @@
                                 <Button Classes="Well" Classes.active="{Binding IsColor1Active}" Click="Color1_Click"
                                         ToolTip.Tip="Colour 1 (foreground): left-click draws with it">
                                     <StackPanel Spacing="3">
-                                        <Border Width="30" Height="30" CornerRadius="4" BorderBrush="#555555" BorderThickness="1"
+                                        <Border Width="30" Height="30" CornerRadius="4" BorderBrush="{DynamicResource Atelier.StrokeStrongBrush}" BorderThickness="1"
                                                 Background="{Binding PrimaryBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Classes="RibText" FontSize="10" Text="Colour 1" HorizontalAlignment="Center"/>
                                     </StackPanel>
@@ -613,7 +668,7 @@
                                 <Button Classes="Well" Classes.active="{Binding IsColor2Active}" Click="Color2_Click"
                                         ToolTip.Tip="Colour 2 (background): right-click draws with it, and the eraser uses it">
                                     <StackPanel Spacing="3">
-                                        <Border Width="24" Height="24" Margin="0,3" CornerRadius="4" BorderBrush="#555555" BorderThickness="1"
+                                        <Border Width="24" Height="24" Margin="0,3" CornerRadius="4" BorderBrush="{DynamicResource Atelier.StrokeStrongBrush}" BorderThickness="1"
                                                 Background="{Binding SecondaryBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Classes="RibText" FontSize="10" Text="Colour 2" HorizontalAlignment="Center"/>
                                     </StackPanel>
@@ -717,7 +772,7 @@
                             <Canvas Name="TextLayer" IsVisible="{Binding IsTextEditing}">
                                 <Border Canvas.Left="{Binding TextX}" Canvas.Top="{Binding TextY}"
                                         Background="{Binding TextBackgroundBrush}"
-                                        BorderBrush="#9A9A9A" BorderThickness="1">
+                                        BorderBrush="{DynamicResource Atelier.AccentStrokeBrush}" BorderThickness="1">
                                     <TextBox Name="CanvasTextBox" Classes="CanvasText"
                                              Text="{Binding TextContent, Mode=TwoWay}"
                                              Foreground="{Binding PrimaryBrush}"
@@ -731,73 +786,92 @@
 
                             <TextBlock Text="{Binding ErrorMessage}" 
                                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                       Foreground="#FF5555" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                       Foreground="{DynamicResource Atelier.DangerBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             
-                            <TextBlock Text="Drop an image here or press Ctrl+O" 
-                                       IsVisible="{Binding ImagePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"
-                                       Foreground="#444444" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" FontWeight="SemiBold"/>
                         </Panel>
                     </LayoutTransformControl>
                 </Panel>
             </ScrollViewer>
+
+            <!-- Empty state. Outside the zoom transform so it keeps its size, and not
+                 hit-testable so a drop or click still lands on the viewer. -->
+            <StackPanel Grid.Row="1" Name="EmptyState" Spacing="14" IsHitTestVisible="False"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        IsVisible="{Binding ImagePath, Converter={x:Static StringConverters.IsNullOrEmpty}}">
+                <Image Source="/Assets/icon-256.png" Width="132" Height="132" Opacity="0.95"
+                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                <TextBlock Text="Drop an image here" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource Atelier.TextBrush}" FontSize="20" FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock Text="or press" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Atelier.TextMutedBrush}" FontSize="13"/>
+                    <Border Classes="Card" CornerRadius="5" Padding="7,2">
+                        <TextBlock Text="Ctrl + O" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Atelier.TextSecondaryBrush}"/>
+                    </Border>
+                    <TextBlock Text="to open one" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Atelier.TextMutedBrush}" FontSize="13"/>
+                </StackPanel>
+            </StackPanel>
 
             <!-- Exit button overlaid on the image while in picture frame mode -->
             <Button Grid.Row="1" Name="ExitFrameButton"
                     IsVisible="{Binding ShowExitFrameButton}"
                     Click="ExitFrame_Click"
                     HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Margin="12" Padding="10,7"
-                    Background="#B3111111" BorderBrush="#333333" BorderThickness="1"
-                    CornerRadius="6"
+                    Margin="12" Padding="12,7"
+                    Background="{DynamicResource Atelier.PopupBrush}" BorderBrush="{DynamicResource Atelier.RimBrush}" BorderThickness="1"
+                    CornerRadius="16"
                     ToolTip.Tip="Exit picture frame (Esc)">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Path Data="M 3 0 L 0 0 L 0 10 L 3 10 M 4 5 L 10 5 M 7 2 L 10 5 L 7 8"
-                          Stroke="#CCCCCC" StrokeThickness="1.5" Width="11" Height="11" Stretch="Uniform"/>
-                    <TextBlock Text="EXIT FRAME" Foreground="#CCCCCC" FontSize="10" FontWeight="ExtraBold" LetterSpacing="1.5" VerticalAlignment="Center"/>
+                          Stroke="{DynamicResource Atelier.AccentBrush}" StrokeThickness="1.5" Width="11" Height="11" Stretch="Uniform"/>
+                    <TextBlock Text="Exit frame" Foreground="{DynamicResource Atelier.TextBrush}" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
             </Grid>
 
             <!-- GridSplitter for Resizing -->
-            <GridSplitter Grid.Column="1" Width="1" Background="#222222" 
+            <GridSplitter Grid.Column="1" Width="1" Background="{DynamicResource Atelier.DividerBrush}"
                           ResizeDirection="Columns" IsVisible="{Binding IsRightPaneVisible}"/>
 
             <!-- Side Panel (Right) -->
-            <Border Grid.Column="2" Name="RightPane" Background="#0D0D0D" 
-                    BorderBrush="#222222" BorderThickness="1,0,0,0"
+            <Border Grid.Column="2" Name="RightPane" Background="{DynamicResource Atelier.PaneBrush}"
+                    BorderThickness="0"
                     IsVisible="{Binding IsRightPaneVisible}"
                     Padding="0">
                 <Grid RowDefinitions="Auto,*">
                     <!-- Right Pane Header -->
-                    <Border Grid.Row="0" Background="#111111" Padding="15,6,8,6" BorderBrush="#222222" BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="IMAGE INFO" x:Name="RightPaneHeader"
-                                       VerticalAlignment="Center"
-                                       Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" LetterSpacing="1"/>
+                    <Border Grid.Row="0" Background="Transparent" Padding="18,12,10,8">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Border Grid.Column="0" Width="3" Height="14" CornerRadius="2" Margin="0,0,10,0"
+                                    Background="{DynamicResource Atelier.AccentGradientBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="IMAGE INFO" x:Name="RightPaneHeader"
+                                       VerticalAlignment="Center" Classes="Eyebrow"
+                                       Foreground="{DynamicResource Atelier.TextSecondaryBrush}" FontSize="11"/>
                             <!-- Only in view mode: in edit mode this pane holds the editor, and
                                  hiding metadata would not close it. -->
-                            <Button Grid.Column="1" Name="CloseMetadataButton"
+                            <Button Grid.Column="2" Name="CloseMetadataButton"
                                     Classes="Icon" Click="CloseMetadata_Click"
                                     IsVisible="{Binding IsViewMode}"
                                     Width="24" Height="24" Padding="0"
                                     ToolTip.Tip="Hide metadata (View &gt; Image Metadata)">
-                                <Path Data="M 0 0 L 10 10 M 10 0 L 0 10" Stroke="#AAAAAA" StrokeThickness="1.5"
+                                <Path Data="M 0 0 L 10 10 M 10 0 L 0 10" Stroke="{DynamicResource Atelier.TextSecondaryBrush}" StrokeThickness="1.5"
                                       Width="9" Height="9" Stretch="Uniform"/>
                             </Button>
                         </Grid>
                     </Border>
 
-                    <Panel Grid.Row="1" Margin="15">
+                    <Panel Grid.Row="1" Margin="14,4,14,14">
                         <!-- Metadata View -->
                         <DockPanel IsVisible="{Binding IsViewMode}">
                             <!-- Docked first, like the editor's buttons, so it stays put while the list scrolls. -->
-                            <Button DockPanel.Dock="Bottom" Name="RemoveMetadataButton" Classes="Modern"
+                            <Button DockPanel.Dock="Bottom" Name="RemoveMetadataButton" Classes="Modern Danger"
                                     Content="Remove Metadata..." Click="RemoveMetadata_Click"
                                     IsEnabled="{Binding CanRemoveMetadata}"
                                     IsVisible="{Binding HasImage}"
-                                    Margin="0,12,0,0"
+                                    Margin="0,12,0,0" Padding="12,8"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                    Foreground="#FF7777" Background="Transparent" BorderBrush="#442222"
                                     ToolTip.Tip="Strip EXIF, XMP, IPTC and Content Credentials (C2PA) from the file"/>
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding MetadataItems}">
@@ -805,19 +879,19 @@
                                         <DataTemplate>
                                             <Panel>
                                                 <!-- A section: File, EXIF, Content Credentials. -->
-                                                <StackPanel IsVisible="{Binding IsHeader}" Margin="0,6,0,14">
-                                                    <TextBlock Text="{Binding Label}" Foreground="#5AA2FF" FontSize="11" FontWeight="Bold" LetterSpacing="1.5"/>
-                                                    <TextBlock Text="{Binding Value}" IsVisible="{Binding HasNote}" Foreground="#666666" FontSize="12" FontStyle="Italic" Margin="0,6,0,0"/>
-                                                    <Rectangle Height="1" Fill="#2A2A2A" Margin="0,8,0,0"/>
+                                                <StackPanel IsVisible="{Binding IsHeader}" Margin="0,10,0,12">
+                                                    <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Atelier.AccentBrush}" FontSize="11" FontWeight="Bold" LetterSpacing="1.4"/>
+                                                    <TextBlock Text="{Binding Value}" IsVisible="{Binding HasNote}" Foreground="{DynamicResource Atelier.TextMutedBrush}" FontSize="12" FontStyle="Italic" Margin="0,6,0,0"/>
+                                                    <Rectangle Height="1" Fill="{DynamicResource Atelier.StrokeBrush}" Margin="0,8,0,0"/>
                                                 </StackPanel>
                                                 <!-- An EXIF directory inside its section. -->
                                                 <TextBlock IsVisible="{Binding IsSubheader}" Text="{Binding Label}"
-                                                           Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" LetterSpacing="1"
+                                                           Foreground="{DynamicResource Atelier.TextSecondaryBrush}" FontSize="10" FontWeight="Bold" LetterSpacing="1"
                                                            Margin="0,2,0,12"/>
-                                                <StackPanel IsVisible="{Binding IsField}" Margin="0,0,0,14">
-                                                    <TextBlock Text="{Binding Label}" Foreground="#888888" FontSize="11" FontWeight="SemiBold" TextAlignment="Left" LetterSpacing="0.5"/>
-                                                    <SelectableTextBlock Text="{Binding Value}" Foreground="#FFFFFF" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,5,0,0"/>
-                                                    <Rectangle Height="1" Fill="#1A1A1A" Margin="0,10,0,0"/>
+                                                <StackPanel IsVisible="{Binding IsField}" Margin="0,0,0,12">
+                                                    <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Atelier.TextMutedBrush}" FontSize="11" FontWeight="SemiBold" TextAlignment="Left" LetterSpacing="0.3"/>
+                                                    <SelectableTextBlock Text="{Binding Value}" Foreground="{DynamicResource Atelier.TextBrush}" FontSize="13" FontWeight="Medium" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                                    <Rectangle Height="1" Fill="{DynamicResource Atelier.DividerBrush}" Margin="0,10,0,0"/>
                                                 </StackPanel>
                                             </Panel>
                                         </DataTemplate>
@@ -830,48 +904,48 @@
                         <!-- The buttons dock first so they always keep their place; the sliders take what is left and scroll. -->
                         <DockPanel IsVisible="{Binding IsEditMode}">
                             <StackPanel DockPanel.Dock="Bottom" Margin="0,16,0,0" Spacing="10">
-                                <Button Classes="Modern" Content="Save Changes" Click="SaveEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="#2A2A2A"/>
-                                <Button Classes="Modern" Content="Save As..." Click="SaveAsEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                                <Button Classes="Modern" Content="Discard" Click="DiscardEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Foreground="#FF5555" Background="Transparent" BorderBrush="#442222"/>
+                                <Button Classes="Modern" Content="Save Changes" Click="SaveEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,9" Classes.Accent="True"/>
+                                <Button Classes="Modern" Content="Save As..." Click="SaveAsEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,8"/>
+                                <Button Classes="Modern" Content="Discard" Click="DiscardEdit_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,8" Classes.Danger="True"/>
                             </StackPanel>
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Spacing="20">
                                     <!-- Applied over the painting as a final pass, and baked in on save. -->
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Text="ADJUSTMENTS" Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" LetterSpacing="1" VerticalAlignment="Center"/>
+                                        <TextBlock Text="ADJUSTMENTS" Classes="Eyebrow" Foreground="{DynamicResource Atelier.TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center"/>
                                         <Button Grid.Column="1" Classes="Icon" Content="Reset" FontSize="11" Padding="8,3"
                                                 Click="ResetAdjustments_Click" IsEnabled="{Binding IsAdjusted}"
                                                 ToolTip.Tip="Put every slider back and clear the filter"/>
                                     </Grid>
                                     <!-- HSL Adjustments -->
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="BRIGHTNESS" Foreground="#888888" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"/>
+                                        <TextBlock Text="BRIGHTNESS" Classes="Eyebrow"/>
                                         <Slider Minimum="0" Maximum="200" Value="{Binding Brightness}"/>
                                     </StackPanel>
                                     
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="SATURATION" Foreground="#888888" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"/>
+                                        <TextBlock Text="SATURATION" Classes="Eyebrow"/>
                                         <Slider Minimum="0" Maximum="200" Value="{Binding Saturation}"/>
                                     </StackPanel>
                                     
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="HUE" Foreground="#888888" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"/>
+                                        <TextBlock Text="HUE" Classes="Eyebrow"/>
                                         <Slider Minimum="0" Maximum="200" Value="{Binding Hue}"/>
                                     </StackPanel>
                                     
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="CONTRAST" Foreground="#888888" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"/>
+                                        <TextBlock Text="CONTRAST" Classes="Eyebrow"/>
                                         <Slider Minimum="-100" Maximum="100" Value="{Binding Contrast}"/>
                                     </StackPanel>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="BLUR" Foreground="#888888" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"/>
+                                        <TextBlock Text="BLUR" Classes="Eyebrow"/>
                                         <Slider Minimum="0" Maximum="10" Value="{Binding BlurValue}"/>
                                     </StackPanel>
 
-                                    <Rectangle Height="1" Fill="#222222" Margin="0,5"/>
+                                    <Rectangle Height="1" Fill="{DynamicResource Atelier.DividerBrush}" Margin="0,5"/>
 
-                                    <TextBlock Text="FILTERS" Foreground="#888888" FontSize="11" FontWeight="SemiBold" LetterSpacing="1"/>
+                                    <TextBlock Text="FILTERS" Classes="Eyebrow" Foreground="{DynamicResource Atelier.TextSecondaryBrush}" FontSize="11"/>
                                     <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <Button Classes="Modern" Content="Mono" Click="Filter_Click" Tag="Grayscale" Width="85" Margin="3" FontSize="11"/>
                                         <Button Classes="Modern" Content="Sepia" Click="Filter_Click" Tag="Sepia" Width="85" Margin="3" FontSize="11"/>
@@ -890,7 +964,7 @@
         </Grid>
 
         <!-- Bottom Area -->
-        <Border Grid.Row="2" Name="BottomBar" Background="#0A0A0A" BorderBrush="#222222" BorderThickness="0,1,0,0" IsVisible="{Binding IsChromeVisible}">
+        <Border Grid.Row="2" Name="BottomBar" Background="{DynamicResource Atelier.ChromeBrush}" BorderBrush="{DynamicResource Atelier.DividerBrush}" BorderThickness="0,1,0,0" IsVisible="{Binding IsChromeVisible}">
             <Panel>
             <!-- Edit mode: Paint's status bar: pointer, selection and canvas size, zoom. -->
             <Grid Name="EditStatusBar" IsVisible="{Binding IsEditMode}" Margin="14,6"
@@ -907,11 +981,11 @@
                     <Path Classes="StatusIco" Data="M 1.5 1.5 L 12.5 1.5 L 12.5 12.5 L 1.5 12.5 Z M 1.5 9 L 5 6 L 8 9 L 10 7 L 12.5 9.5"/>
                     <TextBlock Classes="StatusText" Text="{Binding CanvasSizeText}"/>
                 </StackPanel>
-                <TextBlock Grid.Column="3" Classes="StatusText" Foreground="#777777" Margin="10,0"
+                <TextBlock Grid.Column="3" Classes="StatusText" Foreground="{DynamicResource Atelier.TextMutedBrush}" Margin="10,0"
                            Text="{Binding ToolHint}" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Grid.Column="4" Name="EditStatusText" Text="{Binding StatusMessage}"
                            IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="#6FD08C" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                           Foreground="{DynamicResource Atelier.SuccessBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4">
                     <ToggleButton Classes="Rib" IsChecked="{Binding ShowGridlines, Mode=TwoWay}" MinHeight="24" Padding="4,2"
                                   ToolTip.Tip="Gridlines (Ctrl+G) -- shown from 400% zoom">
@@ -921,7 +995,7 @@
                         <Path Classes="StatusIco" Margin="0" Data="M 2 7 L 12 7"/>
                     </Button>
                     <Button Classes="Rib" Click="ResetZoom_Click" MinHeight="24" Padding="6,2" MinWidth="56" ToolTip.Tip="Fit to window (Ctrl+0)">
-                        <TextBlock Classes="StatusText" Foreground="White" Text="{Binding ZoomLevel, StringFormat=\{0:P0\}}"/>
+                        <TextBlock Classes="StatusText" Foreground="{DynamicResource Atelier.TextBrush}" Text="{Binding ZoomLevel, StringFormat=\{0:P0\}}"/>
                     </Button>
                     <Button Classes="Rib" Click="ZoomIn_Click" MinHeight="24" Padding="4,2" ToolTip.Tip="Zoom in (Ctrl++)">
                         <Path Classes="StatusIco" Margin="0" Data="M 2 7 L 12 7 M 7 2 L 7 12"/>
@@ -931,13 +1005,14 @@
 
             <StackPanel IsVisible="{Binding IsViewMode}">
                 <!-- Chevron Toggle -->
-                <Button HorizontalAlignment="Center" 
+                <Button HorizontalAlignment="Center"
                         Classes="Icon"
                         Click="ToggleControls_Click"
-                        Padding="20,5">
-                    <Path Data="{Binding ChevronData}" 
-                          Fill="#666666" 
-                          Width="12" Height="8" 
+                        Padding="18,3" Margin="0,2,0,0"
+                        ToolTip.Tip="Show or hide the controls">
+                    <Path Data="{Binding ChevronData}"
+                          Fill="{DynamicResource Atelier.TextMutedBrush}"
+                          Width="11" Height="7"
                           Stretch="Uniform">
                         <Path.Transitions>
                             <Transitions>
@@ -946,56 +1021,56 @@
                         </Path.Transitions>
                     </Path>
                 </Button>
-                
-                <!-- Controls & Status Bar -->
-                <StackPanel IsVisible="{Binding ShowControls}" Margin="15,0,15,15" Spacing="15">
-                    <!-- Navigation Buttons -->
-                    <Grid ColumnDefinitions="*,Auto,*">
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                            <!-- Zoom Out -->
-                            <Button Classes="Modern" Click="ZoomOut_Click" Width="40" Height="40" Padding="0" ToolTip.Tip="Zoom Out">
-                                 <Path Data="M 0 5 L 10 5 M 0 0 M 10 10" Stroke="#CCCCCC" StrokeThickness="2" Width="12" Height="12" Stretch="Uniform"/>
-                            </Button>
-                            
-                            <!-- Prev -->
-                            <Button Classes="Modern" Click="Prev_Click" Width="50" Height="40" Padding="0" ToolTip.Tip="Previous Image (Left Arrow)">
-                                 <Path Data="M 10 0 L 0 5 L 10 10 Z" Fill="#CCCCCC" Width="12" Height="12" Stretch="Uniform"/>
-                            </Button>
 
-                            <!-- Reset Zoom / Zoom Info -->
-                            <Button Classes="Modern" Click="ResetZoom_Click" MinWidth="100" Height="40" HorizontalContentAlignment="Center" ToolTip.Tip="Reset Zoom (Fit to Screen)">
-                                 <TextBlock Text="{Binding ZoomLevel, StringFormat=\{0:P0\}}" Foreground="#FFFFFF" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
-                            </Button>
+                <!-- Controls & Status Bar: file on the left, the navigation dock centred, size on the right. -->
+                <Grid IsVisible="{Binding ShowControls}" Margin="14,0,14,12" ColumnDefinitions="*,Auto,*">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="2,0,16,0">
+                        <TextBlock Text="{Binding ImagePath}" MaxWidth="460"
+                                   Foreground="{DynamicResource Atelier.TextSecondaryBrush}" FontSize="11.5" FontWeight="Medium"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   ToolTip.Tip="{Binding ImagePath}"/>
+                        <TextBlock Name="StatusText" Text="{Binding StatusMessage}"
+                                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Foreground="{DynamicResource Atelier.SuccessBrush}" FontSize="11.5" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
 
-                            <!-- Next -->
-                            <Button Classes="Modern" Click="Next_Click" Width="50" Height="40" Padding="0" ToolTip.Tip="Next Image (Right Arrow)">
-                                 <Path Data="M 0 0 L 10 5 L 0 10 Z" Fill="#CCCCCC" Width="12" Height="12" Stretch="Uniform"/>
+                    <!-- Navigation dock -->
+                    <Border Grid.Column="1" Classes="Card" CornerRadius="22" Padding="5">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <Button Classes="Dock" Click="ZoomOut_Click" ToolTip.Tip="Zoom Out (Ctrl+-)">
+                                <Path Classes="DockIco" Data="M 2 7 L 12 7"/>
                             </Button>
-                            
-                            <!-- Zoom In -->
-                            <Button Classes="Modern" Click="ZoomIn_Click" Width="40" Height="40" Padding="0" ToolTip.Tip="Zoom In">
-                                 <Path Data="M 0 5 L 10 5 M 5 0 L 5 10" Stroke="#CCCCCC" StrokeThickness="2" Width="12" Height="12" Stretch="Uniform"/>
+                            <Button Classes="Dock" Click="Prev_Click" ToolTip.Tip="Previous Image (Left Arrow)">
+                                <Path Classes="DockIco" Data="M 9 2 L 4 7 L 9 12"/>
+                            </Button>
+                            <Button Classes="Dock" Click="ResetZoom_Click" MinWidth="76" Padding="12,0" ToolTip.Tip="Fit to Screen (Ctrl+0)">
+                                <TextBlock Text="{Binding ZoomLevel, StringFormat=\{0:P0\}}" Foreground="{DynamicResource Atelier.TextBrush}"
+                                           FontSize="12.5" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Button>
+                            <Button Classes="Dock" Click="Next_Click" ToolTip.Tip="Next Image (Right Arrow)">
+                                <Path Classes="DockIco" Data="M 5 2 L 10 7 L 5 12"/>
+                            </Button>
+                            <Button Classes="Dock" Click="ZoomIn_Click" ToolTip.Tip="Zoom In (Ctrl++)">
+                                <Path Classes="DockIco" Data="M 2 7 L 12 7 M 7 2 L 7 12"/>
                             </Button>
                         </StackPanel>
-                    </Grid>
-
-                    <Border Background="#111111" CornerRadius="8" Padding="15,8" BorderBrush="#222222" BorderThickness="1">
-                        <Grid ColumnDefinitions="*,Auto,Auto">
-                            <TextBlock Text="{Binding ImagePath}" Foreground="#CCCCCC" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="1" Name="StatusText" Text="{Binding StatusMessage}"
-                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                       Foreground="#6FD08C" FontSize="11" FontWeight="SemiBold"
-                                       VerticalAlignment="Center" Margin="10,0,0,0"/>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" Margin="10,0,0,0">
-                                <TextBlock Text="{Binding ImageWidth, StringFormat='\{0\}'}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <TextBlock Text="×" Foreground="#AAAAAA" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding ImageHeight, StringFormat='\{0\}'}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Grid>
                     </Border>
-                </StackPanel>
+
+                    <Border Grid.Column="2" Classes="Card" CornerRadius="14" Padding="12,5"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            IsVisible="{Binding HasImage}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding ImageWidth, StringFormat='\{0\}'}" Foreground="{DynamicResource Atelier.TextBrush}" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="×" Foreground="{DynamicResource Atelier.TextMutedBrush}" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ImageHeight, StringFormat='\{0\}'}" Foreground="{DynamicResource Atelier.TextBrush}" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="px" Foreground="{DynamicResource Atelier.TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </StackPanel>
             </Panel>
         </Border>
     </Grid>
+    </Panel>
 </Window>
