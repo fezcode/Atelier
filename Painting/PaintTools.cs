@@ -16,6 +16,7 @@ namespace Atelier.Painting
         Picker,
         Magnifier,
         Shape,
+        Crop,
     }
 
     /// <summary>The nine brushes in Paint's Brushes gallery, in its order.</summary>

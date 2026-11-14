@@ -674,6 +674,101 @@ public class PaintTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task CropTool_StartsWithAFrameRoundTheWholePicture()
+    {
+        var vm = await Editing(Png("a.png", 60, 40));
+        vm.Tool = PaintTool.Crop;
+
+        Assert.Equal(new Rect(0, 0, 60, 40), vm.CropFrame);
+        Assert.Equal("60 × 40", vm.CropSizeText);
+        Assert.False(vm.CanApplyCrop);
+    }
+
+    [AvaloniaFact]
+    public async Task CropTool_DraggingCornersThenEnterCrops()
+    {
+        var vm = await Editing(Png("a.png", 60, 40));
+        vm.ZoomLevel = 1;
+        vm.Tool = PaintTool.Crop;
+
+        vm.PaintPointerDown(0, 0, false);       // top-left corner
+        vm.PaintPointerMove(10, 5);
+        vm.PaintPointerUp(10, 5);
+        vm.PaintPointerDown(60, 40, false);     // bottom-right corner
+        vm.PaintPointerMove(40, 30);
+        vm.PaintPointerUp(40, 30);
+
+        Assert.Equal(new Rect(10, 5, 30, 25), vm.CropFrame);
+        Assert.True(vm.CanApplyCrop);
+        vm.ApplyCrop();
+
+        Assert.Equal(30, vm.Document!.Width);
+        Assert.Equal(25, vm.Document.Height);
+        Assert.Equal(new Rect(0, 0, 30, 25), vm.CropFrame); // a fresh frame round the result
+
+        vm.Undo();
+        Assert.Equal(60, vm.Document.Width);
+        Assert.Equal(new Rect(0, 0, 60, 40), vm.CropFrame);
+    }
+
+    [AvaloniaFact]
+    public async Task CropTool_MovingTheFrameStopsAtTheEdge()
+    {
+        var vm = await Editing(Png("a.png", 60, 40));
+        vm.ZoomLevel = 1;
+        vm.Tool = PaintTool.Crop;
+        vm.PaintPointerDown(60, 40, false);
+        vm.PaintPointerMove(30, 20);
+        vm.PaintPointerUp(30, 20);               // frame 0,0 30x20
+
+        vm.PaintPointerDown(15, 10, false);      // inside: move
+        vm.PaintPointerMove(100, 100);
+        vm.PaintPointerUp(100, 100);
+
+        Assert.Equal(new Rect(30, 20, 30, 20), vm.CropFrame);
+    }
+
+    [AvaloniaFact]
+    public async Task CropTool_SquareRatioFitsInsideTheFrame()
+    {
+        var vm = await Editing(Png("a.png", 60, 40));
+        vm.Tool = PaintTool.Crop;
+        vm.CropAspect = vm.CropAspects.First(a => a.Ratio == 1);
+
+        Assert.Equal(new Rect(10, 0, 40, 40), vm.CropFrame);
+    }
+
+    [AvaloniaFact]
+    public async Task CropTool_EscPutsTheFrameBack()
+    {
+        var vm = await Editing(Png("a.png", 60, 40));
+        vm.ZoomLevel = 1;
+        vm.Tool = PaintTool.Crop;
+        vm.PaintPointerDown(60, 40, false);      // shrink to the top-left quarter
+        vm.PaintPointerMove(30, 20);
+        vm.PaintPointerUp(30, 20);
+        vm.PaintPointerDown(45, 25, false);      // outside the frame: drag out a new one
+        vm.PaintPointerMove(55, 35);
+        vm.PaintPointerUp(55, 35);
+        Assert.Equal(new Rect(45, 25, 10, 10), vm.CropFrame);
+
+        Assert.True(vm.CancelCurrent());
+        Assert.Equal(new Rect(0, 0, 60, 40), vm.CropFrame);
+        Assert.False(vm.CancelCurrent());
+    }
+
+    [AvaloniaFact]
+    public async Task CropTool_StartsFromTheSelection()
+    {
+        var vm = await Editing(Png("a.png", 60, 40));
+        Select(vm, 10, 5, 30, 25);
+        vm.Tool = PaintTool.Crop;
+
+        Assert.Equal(new Rect(10, 5, 20, 20), vm.CropFrame);
+        Assert.False(vm.HasSelection);
+    }
+
+    [AvaloniaFact]
     public async Task DeleteSelection_FillsItWithColour2()
     {
         var vm = await Editing(Png("a.png", 60, 40, "black"));

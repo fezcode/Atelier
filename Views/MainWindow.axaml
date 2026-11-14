@@ -108,6 +108,14 @@
             <Setter Property="Background" Value="{DynamicResource Atelier.CardHoverBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource Atelier.StrokeBrush}"/>
         </Style>
+        <Style Selector="Button.CropApply /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Atelier.AccentStrokeBrush}"/>
+        </Style>
+        <Style Selector="Button.CropApply:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
         <Style Selector="ToggleButton.Rib:checked /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource Atelier.AccentSoftBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource Atelier.AccentStrokeBrush}"/>
@@ -336,6 +344,9 @@
                         <MenuItem Header="_Copy" Click="Copy_Click" InputGesture="Ctrl+C"
                                   IsEnabled="{Binding HasImage}"
                                   ToolTip.Tip="Copy the picture and the file, so it pastes into an editor or a folder alike"/>
+                        <MenuItem Header="Copy Pat_h" Click="CopyPath_Click" InputGesture="Ctrl+Shift+C"
+                                  IsEnabled="{Binding HasImage}"
+                                  ToolTip.Tip="Copy the file's full path as text"/>
                         <MenuItem Header="_Paste" Click="Paste_Click" InputGesture="Ctrl+V"
                                   ToolTip.Tip="Open an image from the clipboard"/>
                         <Separator/>
@@ -360,7 +371,9 @@
                         <MenuItem Header="De_lete Selection" Click="DeleteSelection_Click" InputGesture="Delete"
                                   IsEnabled="{Binding HasSelection}"/>
                         <Separator/>
-                        <MenuItem Header="_Crop to Selection" Click="Crop_Click" InputGesture="Ctrl+Shift+X"
+                        <MenuItem Header="_Crop..." Click="CropTool_Click" InputGesture="C"
+                                  ToolTip.Tip="Drag a frame round the part to keep, then press Enter"/>
+                        <MenuItem Header="Crop to Selectio_n" Click="Crop_Click" InputGesture="Ctrl+Shift+X"
                                   IsEnabled="{Binding HasSelection}"/>
                         <MenuItem Header="_Resize and Skew..." Click="ResizeSkew_Click" InputGesture="Ctrl+W"/>
                         <MenuItem Header="Image _Properties..." Click="ImageProperties_Click" InputGesture="Ctrl+E"/>
@@ -467,10 +480,15 @@
                                              ToolTip.Tip="Free-form selection">
                                     <Path Classes="Ico" StrokeDashArray="2,1.5" Data="M 3 7 C 3 2 14 1 15 6 C 16 10 10 10 9 13 C 8 16 3 13 3 7 Z"/>
                                 </RadioButton>
+                                <RadioButton Classes="Tool" GroupName="PaintTools" Padding="6,4" VerticalAlignment="Top"
+                                             IsChecked="{Binding Tool, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Crop}"
+                                             ToolTip.Tip="Crop (C) -- drag the frame's edges, Enter to crop">
+                                    <StackPanel Spacing="2">
+                                        <Path Classes="Ico" HorizontalAlignment="Center" Data="M 5 1 L 5 13 L 17 13 M 1 5 L 13 5 L 13 17"/>
+                                        <TextBlock Classes="RibText" Text="Crop"/>
+                                    </StackPanel>
+                                </RadioButton>
                                 <StackPanel Spacing="2">
-                                    <Button Classes="Rib" Click="Crop_Click" IsEnabled="{Binding HasSelection}" ToolTip.Tip="Crop to selection (Ctrl+Shift+X)">
-                                        <Path Classes="Ico" Data="M 5 1 L 5 13 L 17 13 M 1 5 L 13 5 L 13 17"/>
-                                    </Button>
                                     <Button Classes="Rib" Click="ResizeSkew_Click" ToolTip.Tip="Resize and skew (Ctrl+W)">
                                         <Path Classes="Ico" Data="M 2 6 L 2 2 L 6 2 M 2 2 L 8 8 M 16 12 L 16 16 L 12 16 M 16 16 L 10 10 M 11 2 L 16 2 L 16 7 M 2 11 L 2 16 L 7 16"/>
                                     </Button>
@@ -652,6 +670,33 @@
                             </StackPanel>
                         </DockPanel>
                         <Rectangle Classes="RibSep"/>
+
+                        <!-- Crop: only for the crop tool -->
+                        <DockPanel Classes="RibGroup" IsVisible="{Binding IsCropTool}">
+                            <TextBlock Classes="RibLabel" Text="Crop"/>
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ComboBox Width="128" FontSize="11" ItemsSource="{Binding CropAspects}"
+                                              SelectedItem="{Binding CropAspect, Mode=TwoWay}" Focusable="False"
+                                              ToolTip.Tip="Aspect ratio. Freeform lets any shape through; hold Shift to keep the current one."/>
+                                    <TextBlock Classes="RibText" MinWidth="76" Text="{Binding CropSizeText, StringFormat='{}{0} px'}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <Button Classes="Rib" Click="ResetCrop_Click" IsEnabled="{Binding CanApplyCrop}" Padding="10,4"
+                                            ToolTip.Tip="Put the frame back round the whole picture (Esc)">
+                                        <TextBlock Classes="RibText" Text="Reset"/>
+                                    </Button>
+                                    <Button Classes="Rib CropApply" Click="ApplyCrop_Click" IsEnabled="{Binding CanApplyCrop}" Padding="12,4"
+                                            ToolTip.Tip="Crop to the frame (Enter)">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <Path Classes="Ico" Width="14" Height="14" Data="M 2 7.5 L 5.5 11 L 12 3.5"/>
+                                            <TextBlock Classes="RibText" Text="Crop" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Classes="RibSep" IsVisible="{Binding IsCropTool}"/>
 
                         <!-- Colours -->
                         <DockPanel Classes="RibGroup">

@@ -212,6 +212,7 @@ namespace Atelier.ViewModels
             _selPath = null;
             _selOffset = default;
             _marquee = null;
+            _cropRect = null;
             _isTextEditing = false;
             this.RaisePropertyChanged(nameof(IsTextEditing));
 
@@ -240,6 +241,7 @@ namespace Atelier.ViewModels
             RebuildDisplay();
             RaiseHistory();
             RaiseSelection();
+            if (IsCropTool) BeginCrop(null);
         }
 
         // ---- The bitmap on screen -------------------------------------------------
@@ -305,6 +307,7 @@ namespace Atelier.ViewModels
                 CopyToDisplay(_doc.Bounds);
                 if (IsAdjusted) SchedulePreview();
             }
+            OnCropDocumentReplaced();
             CanvasInvalidated?.Invoke();
         }
 
@@ -606,10 +609,18 @@ namespace Atelier.ViewModels
             set
             {
                 if (_tool == value) return;
+                // A selection made before picking Crop becomes the starting frame.
+                var cropSeed = value == PaintTool.Crop ? SelectionBounds : null;
+                if (value == PaintTool.Crop) CommitFloat();
                 FinishPendingWork(deselect: value is not (PaintTool.Select or PaintTool.FreeSelect));
                 if (value == PaintTool.Picker) _toolBeforePicker = _tool;
+                if (_gesture == Gesture.Crop) _gesture = Gesture.None;
                 _tool = value;
+                if (value == PaintTool.Crop) BeginCrop(cropSeed);
+                else _cropRect = null;
                 this.RaisePropertyChanged();
+                this.RaisePropertyChanged(nameof(IsCropTool));
+                RaiseCrop();
                 this.RaisePropertyChanged(nameof(ActiveShape));
                 this.RaisePropertyChanged(nameof(SelectedShapeOption));
                 this.RaisePropertyChanged(nameof(ActiveBrush));
@@ -675,6 +686,7 @@ namespace Atelier.ViewModels
             PaintTool.Shape when _shape == ShapeKind.Curve => "Drag a line, then click twice to bend it.",
             PaintTool.Shape when _shape == ShapeKind.Polygon => "Drag the first side, click for each corner, double-click to finish.",
             PaintTool.Shape => "Drag to draw. Hold Shift for a perfect square, circle or 45° line.",
+            PaintTool.Crop => "Drag the edges or corners, or drag out a new frame. Shift keeps the shape. Enter crops, Esc resets.",
             _ => string.Empty,
         };
 
@@ -910,7 +922,7 @@ namespace Atelier.ViewModels
 
         // ---- Pointer gestures -------------------------------------------------------
 
-        private enum Gesture { None, Stroke, WholeStroke, Shape, Marquee, Lasso, MoveFloat }
+        private enum Gesture { None, Stroke, WholeStroke, Shape, Marquee, Lasso, MoveFloat, Crop }
 
         private Gesture _gesture;
         private bool _gestureSecondary;
@@ -994,6 +1006,10 @@ namespace Atelier.ViewModels
                 case PaintTool.FreeSelect:
                     SelectDown(p, ctrl);
                     break;
+
+                case PaintTool.Crop:
+                    if (!secondary) CropDown(p);
+                    break;
             }
             this.RaisePropertyChanged(nameof(CursorText));
         }
@@ -1020,6 +1036,9 @@ namespace Atelier.ViewModels
                 case Gesture.Lasso:
                     if (_points.Count == 0 || SKPoint.Distance(_points[^1], p) >= 1) _points.Add(p);
                     RaiseSelection();
+                    break;
+                case Gesture.Crop:
+                    CropMove(p, shift);
                     break;
                 case Gesture.MoveFloat:
                 {
@@ -1084,6 +1103,9 @@ namespace Atelier.ViewModels
                 }
                 case Gesture.MoveFloat:
                     _gesture = Gesture.None;
+                    break;
+                case Gesture.Crop:
+                    CropUp();
                     break;
             }
         }
@@ -2027,6 +2049,7 @@ namespace Atelier.ViewModels
             if (_isTextEditing) { CancelText(); return true; }
             if (_polygonActive || _curveStage > 0) { FinishPendingShape(); return true; }
             if (_selPath != null || _marquee != null) { ClearSelection(); return true; }
+            if (CanApplyCrop) { ResetCrop(); return true; }
             return false;
         }
     }

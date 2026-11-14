@@ -971,6 +971,11 @@ namespace Atelier.Views
                     else RotateRight_Click(null, new RoutedEventArgs());
                     e.Handled = true;
                 }
+                else if (e.Key == Key.C && ctrl && shift)
+                {
+                    CopyPath_Click(null, new RoutedEventArgs());
+                    e.Handled = true;
+                }
                 else if (e.Key == Key.C && ctrl)
                 {
                     Copy_Click(null, new RoutedEventArgs());

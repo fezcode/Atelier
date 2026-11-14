@@ -68,6 +68,21 @@ namespace Atelier.Views
             else vm.CopyToClipboard();
         }
 
+        public async void CopyPath_Click(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is not { HasImage: true } vm || vm.ImagePath is not { } path) return;
+            if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard) return;
+            try
+            {
+                await clipboard.SetTextAsync(path);
+                vm.StatusMessage = "Path copied";
+            }
+            catch (Exception ex)
+            {
+                vm.ErrorMessage = $"Could not copy the path: {ex.Message}";
+            }
+        }
+
         public async void Paste_Click(object? sender, RoutedEventArgs e)
         {
             if (ViewModel is not { } vm) return;

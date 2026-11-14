@@ -108,6 +108,7 @@ namespace Atelier.Views
         private void UpdateCanvasCursor()
         {
             if (_mainScroll == null || ViewModel is not { } vm) return;
+            _cropCursorFor = null;
             if (!vm.IsEditMode)
             {
                 _mainScroll.Cursor = null;
@@ -121,6 +122,28 @@ namespace Atelier.Views
                     PaintTool.Magnifier => StandardCursorType.Hand,
                     _ => StandardCursorType.Cross,
                 });
+        }
+
+        /// <summary>What the crop drag started on, so the cursor keeps its shape for the whole drag.</summary>
+        private CropHandle _cropGrab;
+        private CropHandle? _cropCursorFor;
+
+        /// <summary>Resize arrows over the frame's edges and corners, a move cross inside it.</summary>
+        private void UpdateCropCursor(CropHandle handle)
+        {
+            if (_mainScroll == null || _cropCursorFor == handle) return;
+            _cropCursorFor = handle;
+            _mainScroll.Cursor = new Cursor(handle switch
+            {
+                CropHandle.Move => StandardCursorType.SizeAll,
+                CropHandle.Top or CropHandle.Bottom => StandardCursorType.SizeNorthSouth,
+                CropHandle.Left or CropHandle.Right => StandardCursorType.SizeWestEast,
+                CropHandle.TopLeft => StandardCursorType.TopLeftCorner,
+                CropHandle.TopRight => StandardCursorType.TopRightCorner,
+                CropHandle.BottomLeft => StandardCursorType.BottomLeftCorner,
+                CropHandle.BottomRight => StandardCursorType.BottomRightCorner,
+                _ => StandardCursorType.Cross,
+            });
         }
 
         /// <summary>The pointer in canvas pixels. False before there is a canvas to aim at.</summary>
@@ -161,6 +184,7 @@ namespace Atelier.Views
 
             bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
             bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+            if (vm.IsCropTool) _cropGrab = vm.HitCrop(p.X, p.Y);
             vm.PaintPointerDown(p.X, p.Y, secondary, shift, ctrl, e.ClickCount);
 
             _isPainting = vm.IsGestureActive;
@@ -176,6 +200,7 @@ namespace Atelier.Views
             if (!TryCanvasPoint(e, out var p)) return false;
 
             vm.PaintPointerMove(p.X, p.Y, e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+            if (vm.IsCropTool && !_spaceHeld) UpdateCropCursor(vm.IsCropDragging ? _cropGrab : vm.HitCrop(p.X, p.Y));
             if (_isPainting)
             {
                 e.Handled = true;
@@ -259,6 +284,7 @@ namespace Atelier.Views
                     case Key.A: vm.SelectAll(); return true;
                     case Key.X when shift: vm.CropToSelection(); return true;
                     case Key.X: vm.CutSelection(); return true;
+                    case Key.C when shift: CopyPath_Click(null, new RoutedEventArgs()); return true;
                     case Key.C: vm.CopySelectionToClipboard(); return true;
                     case Key.V: PasteIntoCanvas(); return true;
                     case Key.W: ResizeSkew_Click(null, new RoutedEventArgs()); return true;
@@ -278,6 +304,7 @@ namespace Atelier.Views
                 case Key.Escape:
                     return vm.CancelCurrent();
                 case Key.Enter:
+                    if (vm.IsCropTool) { vm.ApplyCrop(); return true; }
                     vm.FinishPendingWork(deselect: true);
                     return true;
                 case Key.Left: case Key.Right: case Key.Up: case Key.Down:
@@ -309,6 +336,7 @@ namespace Atelier.Views
             switch (e.Key)
             {
                 case Key.S: vm.Tool = PaintTool.Select; return true;
+                case Key.C: vm.Tool = PaintTool.Crop; return true;
                 case Key.P: vm.Tool = PaintTool.Pencil; return true;
                 case Key.B: vm.Tool = PaintTool.Brush; return true;
                 case Key.E: vm.Tool = PaintTool.Eraser; return true;
@@ -349,6 +377,15 @@ namespace Atelier.Views
         public void DeleteSelection_Click(object? sender, RoutedEventArgs e) => ViewModel?.DeleteSelection();
 
         public void Crop_Click(object? sender, RoutedEventArgs e) => ViewModel?.CropToSelection();
+
+        public void CropTool_Click(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is { } vm) vm.Tool = PaintTool.Crop;
+        }
+
+        public void ApplyCrop_Click(object? sender, RoutedEventArgs e) => ViewModel?.ApplyCrop();
+
+        public void ResetCrop_Click(object? sender, RoutedEventArgs e) => ViewModel?.ResetCrop();
 
         public void InvertColors_Click(object? sender, RoutedEventArgs e) => ViewModel?.InvertColors();
 
