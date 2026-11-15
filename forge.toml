@@ -6,7 +6,7 @@
 
 [app]
 name    = "Atelier"
-version = "0.7.1"
+version = "0.7.2"
 id      = "com.fezcode.atelier"
 icon    = "Assets/atelier-icon.ico"
 
@@ -17,8 +17,8 @@ support_url = "https://github.com/fezcode/Atelier/issues"
 comments    = "A modern, high-performance image and SVG viewer built with Avalonia UI and Magick.NET."
 
 [ui]
-# mica = the Windows 11 look, so setup feels native rather than branded.
-theme        = "mica"
+# glass = frosted acrylic, matching the app's own glass theme.
+theme        = "glass"
 window_title = "Atelier ${app.version} Setup"
 
 [install]
