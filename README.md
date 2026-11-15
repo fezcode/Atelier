@@ -4,6 +4,12 @@
 
 `Atelier` is a high-performance, modern image and SVG viewer built with **Avalonia UI** and **C#**. It provides a buttery-smooth viewing experience with native support for modern formats and advanced vector rendering.
 
+<p align="center">
+  <a href="Assets/atelier-demo.mp4"><img src="Assets/atelier-demo.gif" alt="Atelier demo: flipping through a folder with the arrow keys, zooming into detail, zooming an SVG that stays sharp, and rotating with R" width="100%"/></a>
+</p>
+
+Browse a folder with the arrow keys, zoom right into the detail, keep SVGs razor sharp at any zoom and rotate without touching the file. ([Full-quality video](Assets/atelier-demo.mp4).)
+
 ![Atelier viewing a 2400x1600 photograph, with zoom and frame controls](Assets/viewer.png)
 
 ## Features
